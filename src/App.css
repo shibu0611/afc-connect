@@ -1,0 +1,45 @@
+/* General mobile optimization */
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Ensure inputs and buttons scale nicely on touch screens */
+input,
+select,
+button,
+textarea {
+  font-size: 16px !important; /* Prevents auto-zoom on mobile safari/chrome */
+  max-width: 100%;
+}
+
+/* Responsive Table Wrapper for Offering & Expenses Ledgers */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Media Query for Mobile Phones (Screens smaller than 768px) */
+@media screen and (max-width: 768px) {
+  /* Stack navigation tabs vertically or wrap them smoothly */
+  div[style*='display: flex'][style*='gap: 8px'] {
+    flex-direction: column;
+  }
+
+  /* Make grid cards stack into a single column */
+  div[style*='grid-template-columns'] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Adjust padding and margins for smaller screens */
+  div[style*='padding: 16px'] {
+    padding: 10px !important;
+  }
+
+  /* Ensure tables don't break the layout */
+  table {
+    font-size: 11px !important;
+  }
+}
