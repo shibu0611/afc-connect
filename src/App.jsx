@@ -16,6 +16,8 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
 } from 'firebase/auth';
+import UserManagement from './components/UserManagement';
+import ChangePassword from './components/ChangePassword';
 import * as XLSX from 'xlsx';
 import './App.css';
 
@@ -33,7 +35,11 @@ const MONTH_NAMES = [
   'Nov',
   'Dec',
 ];
-
+const STAFF_WEEKLY_OFFS = {
+  "Sumonto Christian": ["Monday"],
+  "Aruni Nayak": ["Monday"],
+  "Surender Messey": ["Tuesday", "Thursday", "Saturday"]
+};
 const INITIAL_STAFF_PROFILES = {
   'Sumonto Christian': {
     empId: 'EMP001',
@@ -776,8 +782,14 @@ export default function App() {
     if (canViewPayroll) tabs.push('payroll');
     if (canViewPayroll) tabs.push('reports');
     tabs.push('staff portal');
+    
+    // Add User Management for Admins
+    if (isAdmin) tabs.push('users');
+    
+    // Add Change Password tab for profile settings
+   
     return tabs;
-  }, [canViewAttendance, canViewOfferings, canViewPayroll, isRuchi]);
+  }, [canViewAttendance, canViewOfferings, canViewPayroll, isRuchi, isAdmin]);
 
   const showSumontoWallet = isAdmin || isPastor || isSumonto;
   const showSurrenderWallet = isAdmin || isPastor || isSurrender;
@@ -2221,6 +2233,8 @@ export default function App() {
       </div>
 
       {/* COMMON CHURCH CALENDAR TAB */}
+      {activeTab === 'users' && isAdmin && <UserManagement />}
+      
       {activeTab === 'calendar' && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
@@ -2808,9 +2822,9 @@ export default function App() {
 
               const totalDaysInMonth = 26;
               const completedDays = monthShifts.length;
-              const weeklyOffs = 4;
-              const approvedLeaves = 0;
-              const unpaidLeaves = Math.max(
+              const staffOffs = STAFF_WEEKLY_OFFS[staffName] || [];
+              const weeklyOffs = staffOffs.length * 4;
+              const approvedLeaves = 0;              const unpaidLeaves = Math.max(
                 0,
                 totalDaysInMonth - completedDays - approvedLeaves
               );
@@ -3736,13 +3750,27 @@ export default function App() {
               </p>
 
               <form
-                onSubmit={handleChangePassword}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                }}
-              >
+        onSubmit={handleChangePassword}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+        }}
+      >
+        {isAdmin && (
+          <div style={{ marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>Select User Account</label>
+            <select
+              style={{ width: '100%', backgroundColor: '#f8fafc', color: '#1e293b', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', fontSize: '12px' }}
+            >
+              <option value="guest@afcconnect.com">guest@afcconnect.com</option>
+              <option value="robby_7c@yahoo.com">robby_7c@yahoo.com</option>
+              <option value="xsumonto987@gmail.com">xsumonto987@gmail.com</option>
+              <option value="aruni.nayak21@gmail.com">aruni.nayak21@gmail.com</option>
+              <option value="surendermessy@gmail.com">surendermessy@gmail.com</option>
+            </select>
+          </div>
+        )}
                 <input
                   type="password"
                   placeholder="Current Password *"
