@@ -2821,10 +2821,10 @@ export default function App() {
                   a.date?.startsWith(selectedPayrollMonth)
               );
 
-              const totalDaysInMonth = 26;
-              const completedDays = monthShifts.length;
               const staffOffs = STAFF_WEEKLY_OFFS[staffName] || [];
-              const weeklyOffs = staffOffs.length * 4;
+const weeklyOffs = staffOffs.length * 4;
+const totalDaysInMonth = Math.max(1, 30 - weeklyOffs);
+const completedDays = monthShifts.length;
               const approvedLeaves = 0;              const unpaidLeaves = Math.max(
                 0,
                 totalDaysInMonth - completedDays - approvedLeaves
