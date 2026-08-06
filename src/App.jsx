@@ -922,6 +922,7 @@ export default function App() {
   };
 
   const handlePunchOut = () => {
+    if (new Date().getDay() === 0) { alert("Sundays only require Punch In. No Punch Out needed!"); return; }
     if (!myTodayShift) return;
 
     const startTime = new Date(myTodayShift.punchInTime).getTime();
