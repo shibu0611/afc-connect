@@ -782,10 +782,7 @@ export default function App() {
     if (canViewPayroll) tabs.push('payroll');
     if (canViewPayroll) tabs.push('reports');
     tabs.push('staff portal');
-    
-    // Add User Management for Admins
-    if (isAdmin) tabs.push('users');
-    
+       
     // Add Change Password tab for profile settings
    
     return tabs;
