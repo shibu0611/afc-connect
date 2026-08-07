@@ -2232,10 +2232,7 @@ export default function App() {
           </button>
         ))}
       </div>
-
-      {/* COMMON CHURCH CALENDAR TAB */}
-      {activeTab === 'users' && isAdmin && <UserManagement />}
-      
+    
       {activeTab === 'calendar' && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
