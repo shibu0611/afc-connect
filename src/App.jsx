@@ -6443,14 +6443,6 @@ const completedDays = monthShifts.length;
                           {c}
                         </option>
                       ))}
-                      {isAdmin && (
-                        <option
-                          value="ADD_NEW"
-                          style={{ color: '#6b21a8', fontWeight: 'bold' }}
-                        >
-                          ➕ Add Custom Category...
-                        </option>
-                      )}
                     </select>
                   </div>
 
@@ -6482,79 +6474,6 @@ const completedDays = monthShifts.length;
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '11px', color: '#64748b' }}>
-                      Payment Method (Cash or Online)
-                    </label>
-                    <select
-                      value={offeringForm.method}
-                      onChange={(e) =>
-                        setOfferingForm({
-                          ...offeringForm,
-                          method: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: '100%',
-                        backgroundColor: '#f8fafc',
-                        color: '#1e293b',
-                        border: '1px solid #cbd5e1',
-                        padding: '10px',
-                        borderRadius: '8px',
-                        marginTop: '4px',
-                      }}
-                    >
-                      {PAYMENT_METHODS.map((pm) => (
-                        <option key={pm} value={pm}>
-                          {pm}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '11px', color: '#64748b' }}>
-                      Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={offeringForm.date}
-                      onChange={(e) =>
-                        setOfferingForm({
-                          ...offeringForm,
-                          date: e.target.value,
-                        })
-                      }
-                      required
-                      style={{
-                        width: '100%',
-                        backgroundColor: '#f8fafc',
-                        color: '#1e293b',
-                        border: '1px solid #cbd5e1',
-                        padding: '10px',
-                        borderRadius: '8px',
-                        marginTop: '4px',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <input
-                  placeholder="Note / Reference Number (Optional)"
-                  value={offeringForm.note}
-                  onChange={(e) =>
-                    setOfferingForm({ ...offeringForm, note: e.target.value })
-                  }
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    color: '#1e293b',
-                    border: '1px solid #cbd5e1',
-                    padding: '10px',
-                    borderRadius: '8px',
-                  }}
-                />
-
                 <button
                   type="submit"
                   style={{
@@ -6565,7 +6484,6 @@ const completedDays = monthShifts.length;
                     borderRadius: '8px',
                     fontWeight: 'bold',
                     cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(22,163,74,0.2)',
                   }}
                 >
                   {editingOffering
@@ -6576,7 +6494,6 @@ const completedDays = monthShifts.length;
             </div>
           )}
 
-          {/* CONFIRM ALL RECORDED & UPLOAD COUNTING SHEET BUTTON */}
           <div
             style={{
               backgroundColor: '#f3e8ff',
@@ -6587,8 +6504,6 @@ const completedDays = monthShifts.length;
               justifyContent: 'space-between',
               alignItems: 'center',
               marginBottom: '20px',
-              flexWrap: 'wrap',
-              gap: '12px',
             }}
           >
             <div>
@@ -6616,175 +6531,11 @@ const completedDays = monthShifts.length;
                 borderRadius: '8px',
                 fontWeight: 'bold',
                 cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(126,34,206,0.3)',
               }}
             >
               ✅ Yes, All Recorded (Upload Sheet)
             </button>
           </div>
-
-          {/* DAILY SHEET POPUP MODAL */}
-          {showDailySheetModal && (
-            <div
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0,0,0,0.6)',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                zIndex: 1000,
-                padding: '20px',
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: '#ffffff',
-                  width: '100%',
-                  maxWidth: '500px',
-                  borderRadius: '12px',
-                  padding: '24px',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-                }}
-              >
-                <h3
-                  style={{
-                    margin: '0 0 8px 0',
-                    color: '#6b21a8',
-                    fontSize: '18px',
-                  }}
-                >
-                  📁 Upload Daily Counting Sheet
-                </h3>
-                <p
-                  style={{
-                    fontSize: '13px',
-                    color: '#64748b',
-                    marginBottom: '16px',
-                  }}
-                >
-                  Select the collection date and upload the counting sheet
-                  document matching today's totals.
-                </p>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                    marginBottom: '20px',
-                  }}
-                >
-                  <div>
-                    <label
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                        color: '#475569',
-                        display: 'block',
-                        marginBottom: '4px',
-                      }}
-                    >
-                      Collection Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={selectedDailyDate}
-                      onChange={(e) => setSelectedDailyDate(e.target.value)}
-                      style={{
-                        width: '100%',
-                        backgroundColor: '#f8fafc',
-                        color: '#1e293b',
-                        border: '1px solid #cbd5e1',
-                        padding: '10px',
-                        borderRadius: '8px',
-                        fontWeight: 'bold',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                        color: '#475569',
-                        display: 'block',
-                        marginBottom: '4px',
-                      }}
-                    >
-                      Counting Sheet Document (Image / PDF) *
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*, application/pdf"
-                      onChange={handleDailyFileSelect}
-                      style={{
-                        width: '100%',
-                        backgroundColor: '#f8fafc',
-                        color: '#1e293b',
-                        border: '1px solid #cbd5e1',
-                        padding: '8px',
-                        borderRadius: '8px',
-                        fontSize: '12px',
-                      }}
-                    />
-                    {dailyFileObj.name && (
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          color: '#16a34a',
-                          fontWeight: 'bold',
-                          marginTop: '4px',
-                        }}
-                      >
-                        📎 Selected: {dailyFileObj.name}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    onClick={handleSaveDailySheet}
-                    style={{
-                      flex: 1,
-                      backgroundColor: '#16a34a',
-                      color: '#fff',
-                      border: 'none',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    💾 Save & Link Sheet
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowDailySheetModal(false);
-                      setDailyFileObj({ file: null, name: '' });
-                    }}
-                    style={{
-                      flex: 1,
-                      backgroundColor: '#e2e8f0',
-                      color: '#475569',
-                      border: 'none',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           <h3
             style={{
@@ -6795,286 +6546,66 @@ const completedDays = monthShifts.length;
           >
             Professional Offering Ledger
           </h3>
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #cbd5e1',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-            }}
-          >
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                textAlign: 'left',
-                fontSize: '13px',
-              }}
-            >
-              <thead
-                style={{
-                  backgroundColor: '#f8fafc',
-                  color: '#475569',
-                  borderBottom: '2px solid #cbd5e1',
-                }}
-              >
-                <tr>
-                  <th style={{ padding: '12px 16px' }}>Date</th>
-                  <th style={{ padding: '12px 16px' }}>Giver / Source</th>
-                  <th style={{ padding: '12px 16px' }}>Category</th>
-                  <th style={{ padding: '12px 16px' }}>Method</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right' }}>
-                    Amount
-                  </th>
-                  {isAdmin && (
-                    <th style={{ padding: '12px 16px', textAlign: 'center' }}>
-                      Actions
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {(() => {
-                  const sortedList = [...offerings].sort((a, b) => {
-                    const getPriority = (item) => {
-                      const isAnon = (item.memberName || '').includes(
-                        'Anonymous'
-                      );
-                      if (item.category === 'Tithe' && !isAnon) return 1;
-                      if (item.category === 'Tithe' && isAnon) return 2;
-                      return 3;
-                    };
-                    return (
-                      getPriority(a) - getPriority(b) ||
-                      b.date.localeCompare(a.date)
-                    );
-                  });
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '16px' }}>
+            {(() => {
+              const groupedByDate = {};
+              (offerings || []).forEach((o) => {
+                const d = o.date || todayStr;
+                if (!groupedByDate[d]) groupedByDate[d] = [];
+                groupedByDate[d].push(o);
+              });
 
-                  return sortedList.map((o, idx) => {
-                    let displayGiver =
-                      o.memberName || 'Anonymous (Given Anonymously)';
-                    if (displayGiver.includes('Anonymous')) {
-                      displayGiver =
-                        o.category === 'Tithe'
-                          ? 'Anonymous (Tithe)'
-                          : 'Congregation / General';
-                    }
+              const sortedDates = Object.keys(groupedByDate).sort((a, b) => b.localeCompare(a));
 
-                    return (
-                      <tr
-                        key={o.id}
-                        style={{
-                          borderBottom: '1px solid #e2e8f0',
-                          backgroundColor:
-                            idx % 2 === 0 ? '#ffffff' : '#f8fafc',
-                        }}
-                      >
-                        <td style={{ padding: '12px 16px', color: '#64748b' }}>
-                          {o.date}
-                        </td>
-                        <td
-                          style={{
-                            padding: '12px 16px',
-                            fontWeight: 'bold',
-                            color: '#1e293b',
-                          }}
-                        >
-                          {displayGiver}
-                          {o.note && (
-                            <div
-                              style={{
-                                fontSize: '11px',
-                                color: '#94a3b8',
-                                fontWeight: 'normal',
-                              }}
-                            >
-                              Note: {o.note}
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ padding: '12px 16px', color: '#334155' }}>
-                          {o.category}
-                        </td>
-                        <td style={{ padding: '12px 16px', color: '#64748b' }}>
-                          {o.method || 'Cash'}
-                        </td>
-                        <td
-                          style={{
-                            padding: '12px 16px',
-                            textAlign: 'right',
-                            fontWeight: 'bold',
-                            color: '#16a34a',
-                            fontSize: '14px',
-                          }}
-                        >
-                          ₹{Number(o.amount).toLocaleString('en-IN')}
-                        </td>
-                        {isAdmin && (
-                          <td
-                            style={{
-                              padding: '12px 16px',
-                              textAlign: 'center',
-                            }}
-                          >
-                            <button
-                              onClick={() => handleEditOfferingClick(o)}
-                              style={{
-                                backgroundColor: '#f1f5f9',
-                                color: '#6b21a8',
-                                border: '1px solid #cbd5e1',
-                                padding: '4px 8px',
-                                borderRadius: '4px',
-                                fontSize: '11px',
-                                cursor: 'pointer',
-                                fontWeight: 'bold',
-                                marginRight: '6px',
-                              }}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteOffering(o.id)}
-                              style={{
-                                backgroundColor: '#fef2f2',
-                                color: '#dc2626',
-                                border: '1px solid #fca5a5',
-                                padding: '4px 8px',
-                                borderRadius: '4px',
-                                fontSize: '11px',
-                                cursor: 'pointer',
-                                fontWeight: 'bold',
-                              }}
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  });
-                })()}
-              </tbody>
-              <tfoot
-                style={{
-                  backgroundColor: '#f1f5f9',
-                  borderTop: '2px solid #cbd5e1',
-                }}
-              >
-                <tr>
-                  <td
-                    colSpan={isAdmin ? 4 : 3}
-                    style={{
-                      padding: '16px',
-                      textAlign: 'right',
-                      fontWeight: 'bold',
-                      color: '#1e293b',
-                      fontSize: '14px',
+              if (sortedDates.length === 0) {
+                return (
+                  <div style={{ textAlign: 'center', padding: '30px', backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #cbd5e1', color: '#64748b' }}>
+                    No offering or tithe records found.
+                  </div>
+                );
+              }
+
+              return sortedDates.map((date) => {
+                const dateItems = groupedByDate[date];
+                const tithes = dateItems.filter((o) => o.category === 'Tithe');
+                const nonTithes = dateItems.filter((o) => o.category !== 'Tithe');
+
+                const totalTithes = tithes.reduce((sum, o) => sum + Number(o.amount || 0), 0);
+                const totalOfferings = nonTithes.reduce((sum, o) => sum + Number(o.amount || 0), 0);
+                const grandTotal = totalTithes + totalOfferings;
+
+                const sortedTithes = [...tithes].sort((a, b) => {
+                  const nameA = (a.memberName || '').toLowerCase();
+                  const nameB = (b.memberName || '').toLowerCase();
+                  return nameA.localeCompare(nameB);
+                });
+
+                return (
+                  <DateOfferingTableCard
+                    key={date}
+                    date={date}
+                    dateItems={dateItems}
+                    sortedTithes={sortedTithes}
+                    nonTithes={nonTithes}
+                    totalTithes={totalTithes}
+                    totalOfferings={totalOfferings}
+                    grandTotal={grandTotal}
+                    isAdmin={isAdmin}
+                    dailySheets={dailySheets}
+                    todayStr={todayStr}
+                    onEditOffering={handleEditOfferingClick}
+                    onDeleteOffering={handleDeleteOffering}
+                    onUploadSheet={(d) => {
+                      setSelectedDailyDate(d);
+                      setShowDailySheetModal(true);
                     }}
-                  >
-                    {/* ATTACHED DAILY COUNTING SHEET LINK IN FOOTER */}
-                    <div style={{ float: 'left', textAlign: 'left' }}>
-                      {(() => {
-                        const targetDate = offerings[0]?.date || todayStr;
-                        const sheet = dailySheets[targetDate];
-                        if (sheet) {
-                          return (
-                            <a
-                              href={sheet.file}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                fontSize: '13px',
-                                color: '#16a34a',
-                                fontWeight: 'bold',
-                                textDecoration: 'underline',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                              }}
-                            >
-                              📄 View Daily Counting Sheet ({sheet.name})
-                            </a>
-                          );
-                        }
-                        return (
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: '11px',
-                                color: '#dc2626',
-                                fontStyle: 'italic',
-                              }}
-                            >
-                              ⚠️ No sheet uploaded for {targetDate}.
-                            </span>
-                            {isAdmin && (
-                              <button
-                                onClick={() => {
-                                  setSelectedDailyDate(targetDate);
-                                  setShowDailySheetModal(true);
-                                }}
-                                style={{
-                                  backgroundColor: '#7e22ce',
-                                  color: '#fff',
-                                  border: 'none',
-                                  padding: '4px 10px',
-                                  borderRadius: '6px',
-                                  fontSize: '11px',
-                                  fontWeight: 'bold',
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                📁 Upload Sheet Now
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    <span style={{ marginRight: '16px', color: '#0284c7' }}>
-                      Total Tithes: ₹
-                      {offerings
-                        .filter((o) => o.category === 'Tithe')
-                        .reduce((sum, o) => sum + Number(o.amount), 0)
-                        .toLocaleString('en-IN')}
-                    </span>
-                    <span style={{ marginRight: '16px', color: '#ea580c' }}>
-                      Total Offerings: ₹
-                      {offerings
-                        .filter((o) => o.category !== 'Tithe')
-                        .reduce((sum, o) => sum + Number(o.amount), 0)
-                        .toLocaleString('en-IN')}
-                    </span>
-                    Grand Total:
-                  </td>
-                  <td
-                    colSpan="2"
-                    style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontWeight: 'bold',
-                      color: '#16a34a',
-                      fontSize: '16px',
+                    onQuickAddForDate={(d) => {
+                      setEditingDateCard(d);
                     }}
-                  >
-                    ₹
-                    {offerings
-                      .reduce((sum, o) => sum + Number(o.amount), 0)
-                      .toLocaleString('en-IN')}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+                  />
+                );
+              });
+            })()}
           </div>
         </div>
       )}
-    </div>
-  );
-}
