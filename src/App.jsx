@@ -35,11 +35,13 @@ const MONTH_NAMES = [
   'Nov',
   'Dec',
 ];
+
 const STAFF_WEEKLY_OFFS = {
   "Sumonto Christian": ["Monday"],
   "Aruni Nayak": ["Monday"],
   "Surender Messey": ["Tuesday", "Thursday", "Saturday"]
 };
+
 const INITIAL_STAFF_PROFILES = {
   'Sumonto Christian': {
     empId: 'EMP001',
@@ -261,6 +263,241 @@ const DEFAULT_OFFERING_CATEGORIES = [
 ];
 
 const PAYMENT_METHODS = ['Cash', 'UPI / Online'];
+
+function DateOfferingTableCard({
+  date,
+  dateItems,
+  sortedTithes,
+  nonTithes,
+  totalTithes,
+  totalOfferings,
+  grandTotal,
+  isAdmin,
+  dailySheets,
+  todayStr,
+  onEditOffering,
+  onDeleteOffering,
+  onUploadSheet,
+  onQuickAddForDate,
+}) {
+  const [showTithes, setShowTithes] = useState(false);
+  const sheet = dailySheets[date];
+
+  return (
+    <div
+      style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #cbd5e1',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: '#f3e8ff',
+          padding: '12px 16px',
+          fontWeight: 'bold',
+          color: '#6b21a8',
+          fontSize: '15px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          borderBottom: '1px solid #cbd5e1',
+          flexWrap: 'wrap',
+          gap: '8px',
+        }}
+      >
+        <span>📅 Date: {date}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {isAdmin && (
+            <button
+              onClick={() => onQuickAddForDate(date)}
+              style={{
+                backgroundColor: '#7e22ce',
+                color: '#fff',
+                border: 'none',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+              }}
+            >
+              ➕ Add, Edit or Delete Offering for {date}
+            </button>
+          )}
+          <span style={{ fontSize: '13px', color: '#16a34a' }}>
+            Date Total: ₹{grandTotal.toLocaleString('en-IN')}
+          </span>
+        </div>
+      </div>
+
+      <table
+        style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          textAlign: 'left',
+          fontSize: '13px',
+        }}
+      >
+        <thead
+          style={{
+            backgroundColor: '#f8fafc',
+            color: '#475569',
+            borderBottom: '2px solid #cbd5e1',
+          }}
+        >
+          <tr>
+            <th style={{ padding: '12px 16px' }}>Giver / Source</th>
+            <th style={{ padding: '12px 16px' }}>Category</th>
+            <th style={{ padding: '12px 16px' }}>Method</th>
+            <th style={{ padding: '12px 16px', textAlign: 'right' }}>Amount</th>
+            {isAdmin && (
+              <th style={{ padding: '12px 16px', textAlign: 'center' }}>Actions</th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {sortedTithes.length > 0 && (
+            <>
+              <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fdf4ff' }}>
+                <td style={{ padding: '12px 16px', fontWeight: 'bold', color: '#7e22ce' }}>
+                  <button
+                    onClick={() => setShowTithes(!showTithes)}
+                    style={{
+                      backgroundColor: '#7e22ce',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      marginRight: '8px',
+                    }}
+                  >
+                    {showTithes ? '▼ Hide Tithe Givers' : '▶ View Tithe Givers'}
+                  </button>
+                  Tithes Collected ({sortedTithes.length} givers)
+                </td>
+                <td style={{ padding: '12px 16px', color: '#334155' }}>Tithe</td>
+                <td style={{ padding: '12px 16px', color: '#64748b' }}>Mixed</td>
+                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'bold', color: '#16a34a', fontSize: '14px' }}>
+                  ₹{totalTithes.toLocaleString('en-IN')}
+                </td>
+                {isAdmin && <td style={{ padding: '12px 16px' }}></td>}
+              </tr>
+
+              {showTithes &&
+                sortedTithes.map((t) => (
+                  <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: '#faf5ff' }}>
+                    <td style={{ padding: '10px 16px 10px 32px', color: '#1e293b', fontSize: '12px' }}>
+                      ↳ {t.memberName}
+                      {t.note && <span style={{ color: '#94a3b8', fontSize: '11px' }}> (Note: {t.note})</span>}
+                    </td>
+                    <td style={{ padding: '10px 16px', color: '#334155', fontSize: '12px' }}>Tithe</td>
+                    <td style={{ padding: '10px 16px', color: '#64748b', fontSize: '12px' }}>{t.method || 'Cash'}</td>
+                    <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 'bold', color: '#16a34a', fontSize: '12px' }}>
+                      ₹{Number(t.amount).toLocaleString('en-IN')}
+                    </td>
+                    {isAdmin && (
+                      <td style={{ padding: '10px 16px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => onEditOffering(t)}
+                          style={{ backgroundColor: '#f1f5f9', color: '#6b21a8', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer', fontWeight: 'bold', marginRight: '4px' }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => onDeleteOffering(t.id)}
+                          style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+            </>
+          )}
+
+          {nonTithes.map((o, idx) => {
+            let displayGiver = o.memberName || 'Congregation / General';
+            if (displayGiver.includes('Anonymous')) displayGiver = 'Congregation / General';
+
+            return (
+              <tr key={o.id} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                <td style={{ padding: '12px 16px', fontWeight: 'bold', color: '#1e293b' }}>
+                  {displayGiver}
+                  {o.note && <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'normal' }}>Note: {o.note}</div>}
+                </td>
+                <td style={{ padding: '12px 16px', color: '#334155' }}>{o.category}</td>
+                <td style={{ padding: '12px 16px', color: '#64748b' }}>{o.method || 'Cash'}</td>
+                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'bold', color: '#16a34a', fontSize: '14px' }}>
+                  ₹{Number(o.amount).toLocaleString('en-IN')}
+                </td>
+                {isAdmin && (
+                  <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                    <button
+                      onClick={() => onEditOffering(o)}
+                      style={{ backgroundColor: '#f1f5f9', color: '#6b21a8', border: '1px solid #cbd5e1', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold', marginRight: '6px' }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => onDeleteOffering(o.id)}
+                      style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot style={{ backgroundColor: '#f1f5f9', borderTop: '2px solid #cbd5e1' }}>
+          <tr>
+            <td colSpan={isAdmin ? 4 : 3} style={{ padding: '16px', textAlign: 'right', fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>
+              <div style={{ float: 'left', textAlign: 'left' }}>
+                {sheet ? (
+                  <a href={sheet.file} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: '#16a34a', fontWeight: 'bold', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    📄 View Daily Counting Sheet ({sheet.name})
+                  </a>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '11px', color: '#dc2626', fontStyle: 'italic' }}>
+                      ⚠️ No sheet uploaded for {date}.
+                    </span>
+                    {isAdmin && (
+                      <button
+                        onClick={() => onUploadSheet(date)}
+                        style={{ backgroundColor: '#7e22ce', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                      >
+                        📁 Upload Sheet Now
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <span style={{ marginRight: '16px', color: '#0284c7' }}>
+                Tithes: ₹{totalTithes.toLocaleString('en-IN')}
+              </span>
+              <span style={{ marginRight: '16px', color: '#ea580c' }}>
+                Offerings: ₹{totalOfferings.toLocaleString('en-IN')}
+              </span>
+              Grand Total:
+            </td>
+            <td colSpan="2" style={{ padding: '16px', textAlign: 'left', fontWeight: 'bold', color: '#16a34a', fontSize: '16px' }}>
+              ₹{grandTotal.toLocaleString('en-IN')}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
 
 const MemberCard = React.memo(
   ({
@@ -569,10 +806,10 @@ export default function App() {
       `AFC_${reportModule.toUpperCase()}_Report_${todayStr}.xlsx`
     );
   };
+
   const [selectedPayrollMonth, setSelectedPayrollMonth] =
     useState(currentMonthStr);
   const [selectedSalarySlipStaff, setSelectedSalarySlipStaff] = useState(null);
-
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
 
   const [memberForm, setMemberForm] = useState({
@@ -677,6 +914,17 @@ export default function App() {
       setOfferings(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
 
+    const unsubSheets = onSnapshot(collection(db, 'daily_sheets'), (snap) => {
+      const sheetsMap = {};
+      snap.docs.forEach((d) => {
+        const data = d.data();
+        if (data.date) {
+          sheetsMap[data.date] = { file: data.file, name: data.name };
+        }
+      });
+      setDailySheets(sheetsMap);
+    });
+
     const unsubAttendance = onSnapshot(collection(db, 'attendance'), (snap) => {
       setAttendance(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
@@ -713,6 +961,7 @@ export default function App() {
 
     return () => {
       unsubMembers();
+      unsubSheets();
       unsubExpenses();
       unsubOfferings();
       unsubAttendance();
@@ -764,7 +1013,6 @@ export default function App() {
 
   const canAddExpense = (isAdmin || isPastor || isStaff) && !isRuchi;
   const canApproveExpense = isPastor || isAdmin;
-
   const canEditPastAttendance = isAdmin;
 
   const visibleExpenses = useMemo(() => {
@@ -782,14 +1030,8 @@ export default function App() {
     if (canViewPayroll) tabs.push('payroll');
     if (canViewPayroll) tabs.push('reports');
     tabs.push('staff portal');
-       
-    // Add Change Password tab for profile settings
-   
     return tabs;
   }, [canViewAttendance, canViewOfferings, canViewPayroll, isRuchi, isAdmin]);
-
-  const showSumontoWallet = isAdmin || isPastor || isSumonto;
-  const showSurrenderWallet = isAdmin || isPastor || isSurrender;
 
   const staffWallets = useMemo(() => {
     const getWallet = (name) => {
@@ -882,7 +1124,7 @@ export default function App() {
           );
         }
       },
-      (error) => {
+      () => {
         alert('❌ Please ENABLE LOCATION/GPS permissions on your browser.');
       },
       { enableHighAccuracy: true }
@@ -1753,18 +1995,24 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
-  const handleSaveDailySheet = () => {
+  const handleSaveDailySheet = async () => {
     if (!dailyFileObj.file) {
       alert('Please choose a file to upload first!');
       return;
     }
-    setDailySheets((prev) => ({
-      ...prev,
-      [selectedDailyDate]: dailyFileObj,
-    }));
-    setShowDailySheetModal(false);
-    setDailyFileObj({ file: null, name: '' });
-    alert(`✅ Daily collection sheet saved for ${selectedDailyDate}!`);
+    try {
+      await addDoc(collection(db, 'daily_sheets'), {
+        date: selectedDailyDate,
+        file: dailyFileObj.file,
+        name: dailyFileObj.name,
+        createdAt: serverTimestamp(),
+      });
+      setShowDailySheetModal(false);
+      setDailyFileObj({ file: null, name: '' });
+      alert(`✅ Daily collection sheet saved permanently for ${selectedDailyDate}!`);
+    } catch (err) {
+      alert('Error saving counting sheet: ' + err.message);
+    }
   };
 
   const handleAddAdvance = async (e) => {
@@ -2088,7 +2336,6 @@ export default function App() {
         padding: '16px',
       }}
     >
-      {/* BRANDING HEADER - ROYAL PURPLE WITH ENLARGED PROFILE PIC */}
       <div
         style={{
           display: 'flex',
@@ -2191,7 +2438,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* DYNAMIC NAVIGATION TABS - LIGHT THEME */}
       <div
         style={{
           display: 'flex',
@@ -2229,7 +2475,7 @@ export default function App() {
           </button>
         ))}
       </div>
-    
+
       {activeTab === 'calendar' && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
@@ -2459,7 +2705,6 @@ export default function App() {
         </div>
       )}
 
-      {/* CHURCH REPORTS & ANALYTICS HUB TAB */}
       {activeTab === 'reports' && canViewPayroll && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
@@ -2816,10 +3061,11 @@ export default function App() {
               );
 
               const staffOffs = STAFF_WEEKLY_OFFS[staffName] || [];
-const weeklyOffs = staffOffs.length * 4;
-const totalDaysInMonth = Math.max(1, 30 - weeklyOffs);
-const completedDays = monthShifts.length;
-              const approvedLeaves = 0;              const unpaidLeaves = Math.max(
+              const weeklyOffs = staffOffs.length * 4;
+              const totalDaysInMonth = Math.max(1, 30 - weeklyOffs);
+              const completedDays = monthShifts.length;
+              const approvedLeaves = 0;
+              const unpaidLeaves = Math.max(
                 0,
                 totalDaysInMonth - completedDays - approvedLeaves
               );
@@ -2942,7 +3188,6 @@ const completedDays = monthShifts.length;
         </div>
       )}
 
-      {/* SALARY SLIP MODAL */}
       {selectedSalarySlipStaff && (
         <div
           style={{
@@ -3167,203 +3412,8 @@ const completedDays = monthShifts.length;
                         selectedSalarySlipStaff.profile.accountLast4}
                     </td>
                   </tr>
-                  <tr>
-                    <td
-                      style={{
-                        padding: '6px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#f8fafc',
-                      }}
-                    >
-                      <strong>Payment Date</strong>
-                    </td>
-                    <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
-                      01{' '}
-                      {
-                        MONTH_NAMES[
-                          parseInt(
-                            selectedSalarySlipStaff.selectedPayrollMonth.split(
-                              '-'
-                            )[1],
-                            10
-                          ) % 12
-                        ]
-                      }{' '}
-                      {
-                        selectedSalarySlipStaff.selectedPayrollMonth.split(
-                          '-'
-                        )[0]
-                      }
-                    </td>
-                    <td
-                      style={{
-                        padding: '6px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#f8fafc',
-                      }}
-                    >
-                      <strong>Payment Mode</strong>
-                    </td>
-                    <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
-                      Bank Transfer / UPI
-                    </td>
-                  </tr>
                 </tbody>
               </table>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '10px',
-                  marginBottom: '14px',
-                }}
-              >
-                <table
-                  style={{
-                    width: '100%',
-                    borderCollapse: 'collapse',
-                    fontSize: '11px',
-                    border: '1px solid #cbd5e1',
-                  }}
-                >
-                  <thead>
-                    <tr style={{ backgroundColor: '#3b0764', color: '#fff' }}>
-                      <th
-                        colSpan="2"
-                        style={{ padding: '6px', textAlign: 'center' }}
-                      >
-                        ATTENDANCE SUMMARY
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                        }}
-                      >
-                        Total Working Days
-                      </td>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {selectedSalarySlipStaff.totalDaysInMonth}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                        }}
-                      >
-                        Completed Working Days
-                      </td>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {selectedSalarySlipStaff.completedDays}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                        }}
-                      >
-                        Weekly Offs
-                      </td>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {selectedSalarySlipStaff.weeklyOffs}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                        }}
-                      >
-                        Unpaid Leave
-                      </td>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {selectedSalarySlipStaff.unpaidLeaves}
-                      </td>
-                    </tr>
-                    <tr
-                      style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}
-                    >
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                        }}
-                      >
-                        Effective Working Days
-                      </td>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {selectedSalarySlipStaff.completedDays}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <div
-                  style={{
-                    border: '1px solid #cbd5e1',
-                    padding: '8px',
-                    fontSize: '11px',
-                    backgroundColor: '#faf5ff',
-                    borderRadius: '4px',
-                  }}
-                >
-                  <strong style={{ color: '#3b0764' }}>
-                    ⏰ LATE ARRIVAL & ATTENDANCE POLICY
-                  </strong>
-                  <p
-                    style={{
-                      margin: '4px 0 0 0',
-                      color: '#475569',
-                      fontSize: '10px',
-                    }}
-                  >
-                    Employees must complete 7 net working hours inside church
-                    premises daily. Up to 2 hours late arrival is permitted on 2
-                    days per month without salary deduction. Beyond this,
-                    attendance policy rules apply.
-                  </p>
-                </div>
-              </div>
 
               <table
                 style={{
@@ -3488,7 +3538,6 @@ const completedDays = monthShifts.length;
         </div>
       )}
 
-      {/* STAFF PORTAL TAB */}
       {activeTab === 'staff portal' && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
@@ -3521,7 +3570,6 @@ const completedDays = monthShifts.length;
               gap: '16px',
             }}
           >
-            {/* ATTENDANCE CARD */}
             <div
               style={{
                 backgroundColor: '#ffffff',
@@ -3721,7 +3769,6 @@ const completedDays = monthShifts.length;
               )}
             </div>
 
-            {/* CHANGE PASSWORD CARD */}
             <div
               style={{
                 backgroundColor: '#ffffff',
@@ -3745,27 +3792,13 @@ const completedDays = monthShifts.length;
               </p>
 
               <form
-        onSubmit={handleChangePassword}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px',
-        }}
-      >
-        {isAdmin && (
-          <div style={{ marginBottom: '4px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>Select User Account</label>
-            <select
-              style={{ width: '100%', backgroundColor: '#f8fafc', color: '#1e293b', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', fontSize: '12px' }}
-            >
-              <option value="guest@afcconnect.com">guest@afcconnect.com</option>
-              <option value="robby_7c@yahoo.com">robby_7c@yahoo.com</option>
-              <option value="xsumonto987@gmail.com">xsumonto987@gmail.com</option>
-              <option value="aruni.nayak21@gmail.com">aruni.nayak21@gmail.com</option>
-              <option value="surendermessy@gmail.com">surendermessy@gmail.com</option>
-            </select>
-          </div>
-        )}
+                onSubmit={handleChangePassword}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}
+              >
                 <input
                   type="password"
                   placeholder="Current Password *"
@@ -3844,7 +3877,6 @@ const completedDays = monthShifts.length;
               </form>
             </div>
 
-            {/* DAILY TASK CHECKLIST */}
             <div
               style={{
                 backgroundColor: '#ffffff',
@@ -3993,31 +4025,7 @@ const completedDays = monthShifts.length;
                               {task.title}
                             </span>
                           </label>
-                          <div
-                            style={{
-                              fontSize: '10px',
-                              color: '#64748b',
-                              marginTop: '4px',
-                              marginLeft: '24px',
-                              display: 'flex',
-                              gap: '10px',
-                            }}
-                          >
-                            <span>
-                              📌 Assigned:{' '}
-                              <strong>{task.assignedTo || 'All Staff'}</strong>
-                            </span>
-                            {task.dueDate && (
-                              <span
-                                style={{ color: '#ea580c', fontWeight: 'bold' }}
-                              >
-                                ⏳ Due: {formatShortDate(task.dueDate)} (
-                                {task.daysAllowed || 1} day target)
-                              </span>
-                            )}
-                          </div>
                         </div>
-
                         {isAdmin && (
                           <button
                             onClick={() => handleDeleteTaskTemplate(task.id)}
@@ -4050,229 +4058,10 @@ const completedDays = monthShifts.length;
                 )}
               </div>
             </div>
-
-            {/* DAILY WORK REPORT */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                padding: '20px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}
-            >
-              <h3 style={{ margin: '0 0 8px 0', color: '#d97706' }}>
-                Daily Work Report (DWR)
-              </h3>
-
-              {isAdmin || isPastor ? (
-                <div>
-                  <p
-                    style={{
-                      fontSize: '11px',
-                      color: '#64748b',
-                      marginBottom: '12px',
-                    }}
-                  >
-                    📩 Live Submitted DWR Reports for Today ({todayStr}):
-                  </p>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                      maxHeight: '250px',
-                      overflowY: 'auto',
-                    }}
-                  >
-                    {todaySubmittedDWRs.length > 0 ? (
-                      todaySubmittedDWRs.map((shift) => (
-                        <div
-                          key={shift.id}
-                          style={{
-                            backgroundColor: '#f8fafc',
-                            border: '1px solid #cbd5e1',
-                            padding: '10px',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontWeight: 'bold',
-                              color: '#6b21a8',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                            }}
-                          >
-                            <span>👤 {shift.email}</span>
-                            <span
-                              style={{ fontSize: '10px', color: '#16a34a' }}
-                            >
-                              🕒{' '}
-                              {shift.dwrSubmittedAt
-                                ? new Date(
-                                    shift.dwrSubmittedAt
-                                  ).toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })
-                                : 'Submitted'}
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              marginTop: '6px',
-                              color: '#334155',
-                              whiteSpace: 'pre-wrap',
-                            }}
-                          >
-                            📝 {shift.dailyWorkReport}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div
-                        style={{
-                          fontSize: '12px',
-                          color: '#94a3b8',
-                          textAlign: 'center',
-                          padding: '20px',
-                          border: '1px dashed #cbd5e1',
-                          borderRadius: '8px',
-                        }}
-                      >
-                        No staff DWRs submitted yet for today.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <p
-                    style={{
-                      fontSize: '11px',
-                      color: '#64748b',
-                      marginBottom: '10px',
-                    }}
-                  >
-                    Must be submitted before 12 midnight daily.
-                  </p>
-
-                  <textarea
-                    rows="4"
-                    placeholder="List everything you completed today..."
-                    value={dwrText || myTodayShift?.dailyWorkReport || ''}
-                    onChange={(e) => setDwrText(e.target.value)}
-                    style={{
-                      width: '100%',
-                      backgroundColor: '#f8fafc',
-                      color: '#1e293b',
-                      border: '1px solid #cbd5e1',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                    }}
-                  />
-
-                  <button
-                    onClick={handleSaveDWR}
-                    style={{
-                      marginTop: '10px',
-                      backgroundColor: '#ea580c',
-                      color: '#ffffff',
-                      border: 'none',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      width: '100%',
-                      boxShadow: '0 2px 4px rgba(234,88,12,0.2)',
-                    }}
-                  >
-                    📝 Save Work Report
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* FIELD DUTY REQUEST */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                padding: '20px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}
-            >
-              <h3 style={{ margin: '0 0 8px 0', color: '#6b21a8' }}>
-                Official Field Duty Request
-              </h3>
-              <p
-                style={{
-                  fontSize: '11px',
-                  color: '#64748b',
-                  marginBottom: '10px',
-                }}
-              >
-                Leaving church premises for official work?
-              </p>
-
-              <input
-                placeholder="Reason & Destination (e.g. Bank work, Supply purchase)..."
-                value={fieldDutyReason}
-                onChange={(e) => setFieldDutyReason(e.target.value)}
-                style={{
-                  width: '100%',
-                  backgroundColor: '#f8fafc',
-                  color: '#1e293b',
-                  border: '1px solid #cbd5e1',
-                  padding: '10px',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  marginBottom: '10px',
-                }}
-              />
-
-              <button
-                onClick={handleRequestFieldDuty}
-                style={{
-                  backgroundColor: '#7e22ce',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '10px 14px',
-                  borderRadius: '8px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  width: '100%',
-                }}
-              >
-                🚗 Request Field Duty
-              </button>
-
-              {myTodayShift?.fieldDutyStatus &&
-                myTodayShift.fieldDutyStatus !== 'None' && (
-                  <div
-                    style={{
-                      marginTop: '10px',
-                      fontSize: '12px',
-                      color:
-                        myTodayShift.fieldDutyStatus === 'Approved'
-                          ? '#16a34a'
-                          : '#dc2626',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    Field Duty Status: {myTodayShift.fieldDutyStatus}
-                  </div>
-                )}
-            </div>
           </div>
         </div>
       )}
 
-      {/* DASHBOARD TAB */}
       {activeTab === 'dashboard' && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>Dashboard</h2>
@@ -4539,7 +4328,6 @@ const completedDays = monthShifts.length;
                 </div>
               )}
 
-              {/* CURRENT STAFF LIST TABLE */}
               <div
                 style={{
                   marginTop: '16px',
@@ -4626,190 +4414,6 @@ const completedDays = monthShifts.length;
               </div>
             </div>
           )}
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '14px',
-              marginBottom: '20px',
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #cbd5e1',
-                borderTop: '4px solid #7e22ce',
-                borderRadius: '12px',
-                padding: '16px',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-              }}
-            >
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: '15px',
-                  color: '#6b21a8',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                🎂 Today's Birthdays ({todayBirthdays.length})
-              </h3>
-              <div style={{ marginTop: '10px', fontSize: '13px' }}>
-                {todayBirthdays.length > 0 ? (
-                  todayBirthdays.map((m) => (
-                    <div
-                      key={m.id}
-                      style={{
-                        color: '#16a34a',
-                        fontWeight: 'bold',
-                        margin: '4px 0',
-                      }}
-                    >
-                      🎉 {m.name} ({m.mobile || 'No Mobile'})
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ color: '#64748b' }}>No birthdays today.</div>
-                )}
-              </div>
-            </div>
-
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #cbd5e1',
-                borderTop: '4px solid #be185d',
-                borderRadius: '12px',
-                padding: '16px',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-              }}
-            >
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: '15px',
-                  color: '#be185d',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                💍 Today's Marriage Anniversaries ({todayAnniversaries.length})
-              </h3>
-              <div style={{ marginTop: '10px', fontSize: '13px' }}>
-                {todayAnniversaries.length > 0 ? (
-                  todayAnniversaries.map((m) => (
-                    <div
-                      key={m.id}
-                      style={{
-                        color: '#be185d',
-                        fontWeight: 'bold',
-                        margin: '4px 0',
-                      }}
-                    >
-                      💑 {m.name} ({m.mobile || 'No Mobile'})
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ color: '#64748b' }}>
-                    No anniversaries today.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              padding: '16px',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-              marginBottom: '20px',
-            }}
-          >
-            <h3
-              style={{
-                margin: '0 0 12px 0',
-                fontSize: '15px',
-                color: '#ea580c',
-              }}
-            >
-              📅 Celebrations This Month ({MONTH_NAMES[currentMonth]})
-            </h3>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                gap: '12px',
-              }}
-            >
-              <div>
-                <strong style={{ fontSize: '12px', color: '#6b21a8' }}>
-                  Upcoming Birthdays:
-                </strong>
-                {monthBirthdays.length > 0 ? (
-                  monthBirthdays.map((m) => (
-                    <div
-                      key={m.id}
-                      style={{
-                        fontSize: '12px',
-                        color: '#334155',
-                        marginTop: '4px',
-                      }}
-                    >
-                      🎂 {m.name} — <strong>{formatShortDate(m.dob)}</strong>
-                    </div>
-                  ))
-                ) : (
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      color: '#94a3b8',
-                      marginTop: '4px',
-                    }}
-                  >
-                    None this month
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <strong style={{ fontSize: '12px', color: '#be185d' }}>
-                  Upcoming Anniversaries:
-                </strong>
-                {monthAnniversaries.length > 0 ? (
-                  monthAnniversaries.map((m) => (
-                    <div
-                      key={m.id}
-                      style={{
-                        fontSize: '12px',
-                        color: '#334155',
-                        marginTop: '4px',
-                      }}
-                    >
-                      💍 {m.name} —{' '}
-                      <strong>{formatShortDate(m.anniversary)}</strong>
-                    </div>
-                  ))
-                ) : (
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      color: '#94a3b8',
-                      marginTop: '4px',
-                    }}
-                  >
-                    None this month
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
 
           <div
             style={{
@@ -4916,7 +4520,6 @@ const completedDays = monthShifts.length;
         </div>
       )}
 
-      {/* MEMBERS TAB */}
       {activeTab === 'members' && (
         <div>
           {isAdmin && duplicateNameSet.size > 0 && (
@@ -5197,65 +4800,6 @@ const completedDays = monthShifts.length;
                   </div>
                 </div>
 
-                <div>
-                  <label style={{ fontSize: 11, color: '#64748b' }}>
-                    Marriage Anniversary (Optional)
-                  </label>
-                  <div
-                    style={{ display: 'flex', gap: '8px', marginTop: '4px' }}
-                  >
-                    <select
-                      value={memberForm.annivDay}
-                      onChange={(e) =>
-                        setMemberForm({
-                          ...memberForm,
-                          annivDay: e.target.value,
-                        })
-                      }
-                      style={{
-                        flex: 1,
-                        backgroundColor: '#f8fafc',
-                        color: '#1e293b',
-                        border: '1px solid #cbd5e1',
-                        padding: '8px',
-                        borderRadius: '8px',
-                      }}
-                    >
-                      <option value="">Day</option>
-                      {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                        <option key={d} value={String(d)}>
-                          {d}
-                        </option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={memberForm.annivMonth}
-                      onChange={(e) =>
-                        setMemberForm({
-                          ...memberForm,
-                          annivMonth: e.target.value,
-                        })
-                      }
-                      style={{
-                        flex: 1,
-                        backgroundColor: '#f8fafc',
-                        color: '#1e293b',
-                        border: '1px solid #cbd5e1',
-                        padding: '8px',
-                        borderRadius: '8px',
-                      }}
-                    >
-                      <option value="">Month</option>
-                      {MONTH_NAMES.map((m, idx) => (
-                        <option key={m} value={String(idx + 1)}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
                 <textarea
                   placeholder="Residential Address"
                   rows="2"
@@ -5307,114 +4851,6 @@ const completedDays = monthShifts.length;
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
             }}
           />
-          <div
-            style={{
-              display: 'flex',
-              gap: '10px',
-              marginBottom: '16px',
-              flexWrap: 'wrap',
-            }}
-          >
-            <button
-              onClick={() => setShowOnlyMissingDetails(!showOnlyMissingDetails)}
-              style={{
-                flex: 1,
-                backgroundColor: showOnlyMissingDetails ? '#d97706' : '#fef3c7',
-                color: showOnlyMissingDetails ? '#ffffff' : '#92400e',
-                border: '1px solid #f59e0b',
-                padding: '12px',
-                borderRadius: '10px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                fontSize: '13px',
-              }}
-            >
-              {showOnlyMissingDetails
-                ? 'Showing Missing Info Only ⚠️'
-                : '⚠️ Find Missing Info'}
-            </button>
-            <button
-              onClick={() => setShowInactiveMembers(!showInactiveMembers)}
-              style={{
-                flex: 1,
-                backgroundColor: showInactiveMembers ? '#be185d' : '#fce7f3',
-                color: showInactiveMembers ? '#ffffff' : '#9d174d',
-                border: '1px solid #f43f5e',
-                padding: '12px',
-                borderRadius: '10px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                fontSize: '13px',
-              }}
-            >
-              {showInactiveMembers
-                ? 'Showing Inactive (3 Months) 🚨'
-                : '🚨 Inactive Members (3 Months)'}
-            </button>
-          </div>
-          {isAdmin && filteredMembers.length > 0 && (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                backgroundColor: '#ffffff',
-                padding: '10px 14px',
-                borderRadius: '10px',
-                border: '1px solid #cbd5e1',
-                marginBottom: '16px',
-              }}
-            >
-              <button
-                onClick={handleSelectAll}
-                style={{
-                  backgroundColor: '#f1f5f9',
-                  color: '#6b21a8',
-                  border: '1px solid #cbd5e1',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                }}
-              >
-                {selectedMemberIds.length === filteredMembers.length
-                  ? '☑️ Deselect All'
-                  : '☐ Select All'}
-              </button>
-
-              {selectedMemberIds.length > 0 && (
-                <div
-                  style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
-                >
-                  <span
-                    style={{
-                      fontSize: '13px',
-                      color: '#6b21a8',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {selectedMemberIds.length} Selected
-                  </span>
-                  <button
-                    onClick={handleDeleteSelectedMembers}
-                    style={{
-                      backgroundColor: '#dc2626',
-                      color: '#fff',
-                      border: 'none',
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    🗑️ Delete Selected
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
 
           <div
             style={{
@@ -5442,7 +4878,6 @@ const completedDays = monthShifts.length;
         </div>
       )}
 
-      {/* SUNDAY ATTENDANCE MODULE */}
       {activeTab === 'attendance' && canViewAttendance && (
         <div>
           <div
@@ -5467,23 +4902,6 @@ const completedDays = monthShifts.length;
               }}
             />
           </div>
-
-          {attendanceDate !== todayStr && !canEditPastAttendance && (
-            <div
-              style={{
-                backgroundColor: '#fef3c7',
-                color: '#92400e',
-                padding: '12px',
-                borderRadius: '8px',
-                marginBottom: '16px',
-                fontSize: '12px',
-                border: '1px solid #f59e0b',
-              }}
-            >
-              🔒 Viewing past date ({attendanceDate}). Contact Admin Shibu with
-              a reason if changes are needed.
-            </div>
-          )}
 
           <div
             style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
@@ -5531,7 +4949,6 @@ const completedDays = monthShifts.length;
                       borderRadius: '8px',
                       fontWeight: 'bold',
                       cursor: 'pointer',
-                      transition: 'all 0.2s',
                     }}
                   >
                     {isPresent ? '✅ Present' : '❌ Mark Present'}
@@ -5543,195 +4960,11 @@ const completedDays = monthShifts.length;
         </div>
       )}
 
-      {/* EXPENSES TAB */}
       {activeTab === 'expenses' && !isRuchi && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
             Expenses Management
           </h2>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-              gap: '12px',
-              marginBottom: '20px',
-            }}
-          >
-            {showSumontoWallet && (
-              <div
-                style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderTop: '4px solid #7e22ce',
-                  padding: '16px',
-                  borderRadius: '12px',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-                }}
-              >
-                <div style={{ fontSize: '12px', color: '#64748b' }}>
-                  💳 Sumonto Christian's Advance Balance
-                </div>
-                <div
-                  style={{
-                    fontSize: '22px',
-                    fontWeight: 'bold',
-                    color: '#6b21a8',
-                    marginTop: '4px',
-                  }}
-                >
-                  ₹{staffWallets.Sumonto.balance}
-                </div>
-                <div
-                  style={{
-                    fontSize: '11px',
-                    color: '#475569',
-                    marginTop: '4px',
-                  }}
-                >
-                  Total Advance: ₹{staffWallets.Sumonto.totalAdv} | Spent: ₹
-                  {staffWallets.Sumonto.totalSpent}
-                </div>
-              </div>
-            )}
-
-            {showSurrenderWallet && (
-              <div
-                style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderTop: '4px solid #16a34a',
-                  padding: '16px',
-                  borderRadius: '12px',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-                }}
-              >
-                <div style={{ fontSize: '12px', color: '#64748b' }}>
-                  💳 Surender Messey's Advance Balance
-                </div>
-                <div
-                  style={{
-                    fontSize: '22px',
-                    fontWeight: 'bold',
-                    color: '#16a34a',
-                    marginTop: '4px',
-                  }}
-                >
-                  ₹{staffWallets.Surrender.balance}
-                </div>
-                <div
-                  style={{
-                    fontSize: '11px',
-                    color: '#475569',
-                    marginTop: '4px',
-                  }}
-                >
-                  Total Advance: ₹{staffWallets.Surrender.totalAdv} | Spent: ₹
-                  {staffWallets.Surrender.totalSpent}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {(isPastor || isAdmin) && (
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                padding: '16px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-                marginBottom: '20px',
-              }}
-            >
-              <h3
-                style={{
-                  margin: '0 0 12px 0',
-                  fontSize: '15px',
-                  color: '#d97706',
-                }}
-              >
-                + Record Advance Cash Given to Staff
-              </h3>
-              <form
-                onSubmit={handleAddAdvance}
-                style={{
-                  display: 'flex',
-                  gap: '10px',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                }}
-              >
-                <select
-                  value={advanceForm.staffName}
-                  onChange={(e) =>
-                    setAdvanceForm({
-                      ...advanceForm,
-                      staffName: e.target.value,
-                    })
-                  }
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    color: '#1e293b',
-                    border: '1px solid #cbd5e1',
-                    padding: '8px',
-                    borderRadius: '6px',
-                  }}
-                >
-                  <option value="Sumonto Christian">Sumonto Christian</option>
-                  <option value="Surender Messey">Surender Messey</option>
-                </select>
-
-                <input
-                  type="number"
-                  placeholder="Advance Amount (₹) *"
-                  value={advanceForm.amount}
-                  onChange={(e) =>
-                    setAdvanceForm({ ...advanceForm, amount: e.target.value })
-                  }
-                  required
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    color: '#1e293b',
-                    border: '1px solid #cbd5e1',
-                    padding: '8px',
-                    borderRadius: '6px',
-                  }}
-                />
-
-                <input
-                  type="date"
-                  value={advanceForm.date}
-                  onChange={(e) =>
-                    setAdvanceForm({ ...advanceForm, date: e.target.value })
-                  }
-                  required
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    color: '#1e293b',
-                    border: '1px solid #cbd5e1',
-                    padding: '8px',
-                    borderRadius: '6px',
-                  }}
-                />
-
-                <button
-                  type="submit"
-                  style={{
-                    backgroundColor: '#ea580c',
-                    color: '#ffffff',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                  }}
-                >
-                  💰 Save Advance
-                </button>
-              </form>
-            </div>
-          )}
 
           {canAddExpense && (
             <div
@@ -5913,154 +5146,8 @@ const completedDays = monthShifts.length;
                         marginTop: '4px',
                       }}
                     />
-                    {expenseForm.receiptName && !expenseForm.missingBill && (
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          color: '#16a34a',
-                          marginTop: '4px',
-                          fontWeight: 'bold',
-                        }}
-                      >
-                        📎 Attached: {expenseForm.receiptName}
-                      </div>
-                    )}
                   </div>
                 </div>
-
-                {/* SUBMIT WITHOUT BILL OPTION */}
-                <div
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #cbd5e1',
-                    padding: '12px',
-                    borderRadius: '8px',
-                  }}
-                >
-                  <label
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      fontSize: '13px',
-                      fontWeight: 'bold',
-                      color: '#b45309',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={expenseForm.missingBill}
-                      onChange={(e) =>
-                        setExpenseForm({
-                          ...expenseForm,
-                          missingBill: e.target.checked,
-                        })
-                      }
-                      style={{
-                        width: '16px',
-                        height: '16px',
-                        accentColor: '#d97706',
-                      }}
-                    />
-                    Submit Expense Without Bill / Receipt
-                  </label>
-
-                  {expenseForm.missingBill && (
-                    <div style={{ marginTop: '8px' }}>
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          color: '#92400e',
-                          display: 'block',
-                          marginBottom: '4px',
-                        }}
-                      >
-                        ⚠️ You must provide a clear and proper justification for
-                        why the bill is missing (Required for Pastor Robby's
-                        approval):
-                      </span>
-                      <textarea
-                        rows="2"
-                        placeholder="Enter proper justification for missing bill..."
-                        value={expenseForm.missingBillJustification}
-                        onChange={(e) =>
-                          setExpenseForm({
-                            ...expenseForm,
-                            missingBillJustification: e.target.value,
-                          })
-                        }
-                        required
-                        style={{
-                          width: '100%',
-                          backgroundColor: '#ffffff',
-                          color: '#1e293b',
-                          border: '1px solid #d97706',
-                          padding: '8px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {expenseForm.date < todayStr && (
-                  <div
-                    style={{
-                      backgroundColor: '#fef3c7',
-                      border: '1px solid #f59e0b',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize: '12px',
-                        color: '#92400e',
-                        fontWeight: 'bold',
-                        display: 'block',
-                      }}
-                    >
-                      ⚠️ Delayed Submission Notice! (Selected Bill Date:{' '}
-                      {formatShortDate(expenseForm.date)})
-                    </label>
-                    <span
-                      style={{
-                        fontSize: '11px',
-                        color: '#78350f',
-                        display: 'block',
-                        margin: '4px 0 6px 0',
-                      }}
-                    >
-                      Please provide a logical and sensible explanation for
-                      submitting this bill after the expense date for Pastor
-                      Robby's review and approval:
-                    </span>
-                    <textarea
-                      rows="2"
-                      placeholder="Enter mandatory reason for late bill submission..."
-                      value={expenseForm.delayReason}
-                      onChange={(e) =>
-                        setExpenseForm({
-                          ...expenseForm,
-                          delayReason: e.target.value,
-                        })
-                      }
-                      required
-                      style={{
-                        width: '100%',
-                        backgroundColor: '#ffffff',
-                        color: '#1e293b',
-                        border: '1px solid #d97706',
-                        padding: '8px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                      }}
-                    />
-                  </div>
-                )}
 
                 <button
                   type="submit"
@@ -6072,7 +5159,6 @@ const completedDays = monthShifts.length;
                     borderRadius: '8px',
                     fontWeight: 'bold',
                     cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(234,88,12,0.2)',
                   }}
                 >
                   {editingExpense
@@ -6082,273 +5168,9 @@ const completedDays = monthShifts.length;
               </form>
             </div>
           )}
-
-          <h3 style={{ color: '#1e293b' }}>Expense History</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {visibleExpenses.map((e) => (
-              <div
-                key={e.id}
-                style={{
-                  backgroundColor: '#ffffff',
-                  border:
-                    e.status === 'Rejected'
-                      ? '1px solid #fca5a5'
-                      : '1px solid #e2e8f0',
-                  padding: 16,
-                  borderRadius: 10,
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div>
-                    <strong style={{ color: '#6b21a8', fontSize: '17px' }}>
-                      ₹{e.amount}
-                    </strong>{' '}
-                    —{' '}
-                    <span style={{ color: '#1e293b', fontWeight: 'bold' }}>
-                      {e.category}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: '8px',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        padding: '4px 10px',
-                        borderRadius: '12px',
-                        fontWeight: 'bold',
-                        backgroundColor:
-                          e.status === 'Approved'
-                            ? '#dcfce7'
-                            : e.status === 'Rejected'
-                            ? '#fee2e2'
-                            : '#fef3c7',
-                        color:
-                          e.status === 'Approved'
-                            ? '#15803d'
-                            : e.status === 'Rejected'
-                            ? '#b91c1c'
-                            : '#b45309',
-                        border:
-                          e.status === 'Approved'
-                            ? '1px solid #86efac'
-                            : e.status === 'Rejected'
-                            ? '1px solid #fca5a5'
-                            : '1px solid #fde047',
-                      }}
-                    >
-                      {e.status}
-                    </span>
-
-                    {isAdmin && (
-                      <button
-                        onClick={() => handleDeleteExpense(e.id)}
-                        style={{
-                          backgroundColor: '#fef2f2',
-                          color: '#dc2626',
-                          border: '1px solid #fca5a5',
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          fontSize: '11px',
-                          cursor: 'pointer',
-                          fontWeight: 'bold',
-                        }}
-                      >
-                        🗑️ Delete
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    fontSize: '13px',
-                    color: '#334155',
-                    marginTop: '6px',
-                  }}
-                >
-                  📝 <strong>Detail:</strong> {e.detail || '—'}
-                </div>
-
-                <div
-                  style={{
-                    fontSize: '12px',
-                    color: '#64748b',
-                    marginTop: '4px',
-                  }}
-                >
-                  📅 <strong>Expense Date:</strong> {e.date} | 💳{' '}
-                  <strong>Payment Source:</strong>{' '}
-                  {e.paymentSource || 'Direct UPI'} | 👤{' '}
-                  <strong>Submitted By:</strong> {e.addedBy || '—'}
-                </div>
-
-                {e.missingBill && (
-                  <div
-                    style={{
-                      backgroundColor: '#fff7ed',
-                      border: '1px solid #fdba74',
-                      color: '#9a3412',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      marginTop: '6px',
-                    }}
-                  >
-                    ⚠️ <strong>Submitted Without Bill:</strong>{' '}
-                    {e.missingBillJustification}
-                  </div>
-                )}
-
-                {e.delayReason && (
-                  <div
-                    style={{
-                      backgroundColor: '#fef3c7',
-                      border: '1px solid #f59e0b',
-                      color: '#92400e',
-                      padding: '8px 10px',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      marginTop: '6px',
-                    }}
-                  >
-                    ⏰ <strong>Delayed Submission Reason:</strong>{' '}
-                    {e.delayReason}
-                  </div>
-                )}
-
-                <div
-                  style={{
-                    marginTop: '8px',
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                  }}
-                >
-                  {e.receiptFile ? (
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                      }}
-                    >
-                      <span style={{ color: '#16a34a', fontWeight: 'bold' }}>
-                        🧾 Bill/Receipt Attached:
-                      </span>
-                      <a
-                        href={e.receiptFile}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          color: '#7e22ce',
-                          fontWeight: 'bold',
-                          textDecoration: 'underline',
-                        }}
-                      >
-                        View / Download Bill
-                      </a>
-                    </div>
-                  ) : (
-                    <div style={{ color: '#d97706', fontWeight: 'bold' }}>
-                      ℹ️ Note: Submitted without physical bill (Justified
-                      above).
-                    </div>
-                  )}
-                </div>
-
-                {e.status === 'Rejected' && e.rejectionReason && (
-                  <div
-                    style={{
-                      backgroundColor: '#fef2f2',
-                      border: '1px solid #fca5a5',
-                      color: '#991b1b',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      marginTop: '8px',
-                    }}
-                  >
-                    <strong>❌ Rejection Reason from Pastor Robby:</strong>{' '}
-                    {e.rejectionReason}
-                  </div>
-                )}
-
-                {canApproveExpense && e.status === 'Pending' && (
-                  <div
-                    style={{ marginTop: '10px', display: 'flex', gap: '8px' }}
-                  >
-                    <button
-                      onClick={() => handleApproveExpense(e.id)}
-                      style={{
-                        backgroundColor: '#16a34a',
-                        color: '#fff',
-                        border: 'none',
-                        padding: '6px 14px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      ✅ Approve
-                    </button>
-                    <button
-                      onClick={() => handleRejectExpense(e.id)}
-                      style={{
-                        backgroundColor: '#dc2626',
-                        color: '#fff',
-                        border: 'none',
-                        padding: '6px 14px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      ❌ Reject with Reason
-                    </button>
-                  </div>
-                )}
-
-                {e.status === 'Rejected' &&
-                  ((e.addedBy || '').toLowerCase() === userEmail ||
-                    isAdmin) && (
-                    <button
-                      onClick={() => handleEditExpenseClick(e)}
-                      style={{
-                        marginTop: '8px',
-                        backgroundColor: '#e2e8f0',
-                        color: '#6b21a8',
-                        border: '1px solid #cbd5e1',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      ✏️ Edit & Resubmit Clarification
-                    </button>
-                  )}
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
-      {/* OFFERING & TITHES TAB */}
       {activeTab === 'offerings' && canViewOfferings && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
@@ -6537,6 +5359,168 @@ const completedDays = monthShifts.length;
             </button>
           </div>
 
+          {showDailySheetModal && (
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.6)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000,
+                padding: '20px',
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  width: '100%',
+                  maxWidth: '500px',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                }}
+              >
+                <h3
+                  style={{
+                    margin: '0 0 8px 0',
+                    color: '#6b21a8',
+                    fontSize: '18px',
+                  }}
+                >
+                  📁 Upload Daily Counting Sheet
+                </h3>
+                <p
+                  style={{
+                    fontSize: '13px',
+                    color: '#64748b',
+                    marginBottom: '16px',
+                  }}
+                >
+                  Select the collection date and upload the counting sheet
+                  document matching today's totals.
+                </p>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    marginBottom: '20px',
+                  }}
+                >
+                  <div>
+                    <label
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        color: '#475569',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Collection Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={selectedDailyDate}
+                      onChange={(e) => setSelectedDailyDate(e.target.value)}
+                      style={{
+                        width: '100%',
+                        backgroundColor: '#f8fafc',
+                        color: '#1e293b',
+                        border: '1px solid #cbd5e1',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        fontWeight: 'bold',
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        color: '#475569',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Counting Sheet Document (Image / PDF) *
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*, application/pdf"
+                      onChange={handleDailyFileSelect}
+                      style={{
+                        width: '100%',
+                        backgroundColor: '#f8fafc',
+                        color: '#1e293b',
+                        border: '1px solid #cbd5e1',
+                        padding: '8px',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                      }}
+                    />
+                    {dailyFileObj.name && (
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          color: '#16a34a',
+                          fontWeight: 'bold',
+                          marginTop: '4px',
+                        }}
+                      >
+                        📎 Selected: {dailyFileObj.name}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={handleSaveDailySheet}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#16a34a',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    💾 Save & Link Sheet
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDailySheetModal(false);
+                      setDailyFileObj({ file: null, name: '' });
+                    }}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#e2e8f0',
+                      color: '#475569',
+                      border: 'none',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <h3
             style={{
               color: '#1e293b',
@@ -6600,7 +5584,8 @@ const completedDays = monthShifts.length;
                       setShowDailySheetModal(true);
                     }}
                     onQuickAddForDate={(d) => {
-                      setEditingDateCard(d);
+                      setOfferingForm({ ...offeringForm, date: d });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                   />
                 );
@@ -6609,3 +5594,6 @@ const completedDays = monthShifts.length;
           </div>
         </div>
       )}
+    </div>
+  );
+}
