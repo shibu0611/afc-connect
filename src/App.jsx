@@ -5540,7 +5540,56 @@ export default function App() {
                       ))}
                     </select>
                   </div>
-
+                  <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>
+                Offering Date *
+              </label>
+              <input
+                type="date"
+                value={offeringForm.date || ''}
+                onChange={(e) =>
+                  setOfferingForm({
+                    ...offeringForm,
+                    date: e.target.value,
+                  })
+                }
+                required
+                style={{
+                  width: '100%',
+                  backgroundColor: '#f8fafc',
+                  color: '#1e293b',
+                  border: '1px solid #cbd5e1',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  marginTop: '4px',
+                }}
+              />
+            </div>
+            <div style={{ marginTop: '10px' }}>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>
+                Note (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="Add any specific note here..."
+                value={offeringForm.note || ''}
+                onChange={(e) =>
+                  setOfferingForm({
+                    ...offeringForm,
+                    note: e.target.value,
+                  })
+                }
+                style={{
+                  width: '100%',
+                  backgroundColor: '#f8fafc',
+                  color: '#1e293b',
+                  border: '1px solid #cbd5e1',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  marginTop: '4px',
+                }}
+              />
+            </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: '11px', color: '#64748b' }}>
                       Amount (₹) *
