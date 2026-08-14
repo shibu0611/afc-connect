@@ -1846,11 +1846,12 @@ export default function App() {
     }
 
     const formattedAnniv =
-      memberForm.annivDay && memberForm.annivMonth
-        ? `${memberForm.annivDay.padStart(
+      memberForm.anniversaryDay && memberForm.anniversaryMonth
+        ? `${memberForm.anniversaryDay.padStart(
             2,
             '0'
-          )}-${memberForm.annivMonth.padStart(2, '0')}`
+          )}-${memberForm.anniversaryMonth.padStart(2, '0')}` +
+          (memberForm.anniversaryYear ? `-${memberForm.anniversaryYear}` : '')
         : '';
 
     const payload = {
