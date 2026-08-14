@@ -4957,6 +4957,79 @@ export default function App() {
                     borderRadius: '8px',
                   }}
                 />
+                <div style={{ marginTop: '10px' }}>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>
+                Anniversary Date (Day, Month & Optional Year)
+              </label>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                <select
+                  value={memberForm.anniversaryDay || ''}
+                  onChange={(e) =>
+                    setMemberForm({ ...memberForm, anniversaryDay: e.target.value })
+                  }
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#f8fafc',
+                    color: '#1e293b',
+                    border: '1px solid #cbd5e1',
+                    padding: '10px',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <option value="">Day</option>
+                  {Array.from({ length: 31 }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      {i + 1}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={memberForm.anniversaryMonth || ''}
+                  onChange={(e) =>
+                    setMemberForm({ ...memberForm, anniversaryMonth: e.target.value })
+                  }
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#f8fafc',
+                    color: '#1e293b',
+                    border: '1px solid #cbd5e1',
+                    padding: '10px',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <option value="">Month</option>
+                  {[
+                    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                  ].map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={memberForm.anniversaryYear || ''}
+                  onChange={(e) =>
+                    setMemberForm({ ...memberForm, anniversaryYear: e.target.value })
+                  }
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#f8fafc',
+                    color: '#1e293b',
+                    border: '1px solid #cbd5e1',
+                    padding: '10px',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <option value="">Year (Optional)</option>
+                  {Array.from({ length: 110 }, (_, i) => 2026 - i).map((y) => (
+                    <option key={y} value={String(y)}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
                 <button
                   type="submit"
