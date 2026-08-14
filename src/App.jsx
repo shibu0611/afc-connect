@@ -1725,14 +1725,15 @@ export default function App() {
         }
       }
 
-      if (m.anniversary && String(m.anniversary).includes('-')) {
+      if (m.anniversary) {
         const parts = String(m.anniversary).split('-');
-        const day = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10);
-
-        if (month === currentMonth) {
-          monthAnniv.push({ ...m, day });
-          if (day === currentDay) todayAnniv.push(m);
+        if (parts.length >= 2) {
+          const day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10);
+          if (month === currentMonth) {
+            monthAnniv.push({ ...m, day });
+            if (day === currentDay) todayAnniv.push(m);
+          }
         }
       }
     });
