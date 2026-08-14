@@ -461,25 +461,31 @@ function DateOfferingTableCard({
           <tr>
             <td colSpan={isAdmin ? 4 : 3} style={{ padding: '16px', textAlign: 'right', fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>
               <div style={{ float: 'left', textAlign: 'left' }}>
-                {sheet ? (
-                  <a href={sheet.file} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: '#16a34a', fontWeight: 'bold', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    📄 View Daily Counting Sheet ({sheet.name})
-                  </a>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '11px', color: '#dc2626', fontStyle: 'italic' }}>
-                      ⚠️ No sheet uploaded for {date}.
-                    </span>
-                    {isAdmin && (
-                      <button
-                        onClick={() => onUploadSheet(date)}
-                        style={{ backgroundColor: '#7e22ce', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-                      >
-                        📁 Upload Sheet Now
-                      </button>
-                    )}
-                  </div>
+              {sheet ? (
+              <button 
+                onClick={() => {
+                  const win = window.open();
+                  win.document.write(`<html><head><title>${sheet.name}</title></head><body style="margin:0;background:#000;display:flex;justify-content:center;align-items:center;height:100vh;"><img src="${sheet.file}" style="max-width:100%;max-height:100%;object-fit:contain;" /></body></html>`);
+                }}
+                style={{ backgroundColor: 'transparent', border: 'none', color: '#16a34a', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontSize: '13px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              >
+                📄 View Daily Counting Sheet ({sheet.name})
+              </button>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '11px', color: '#dc2626', fontStyle: 'italic' }}>
+                  ⚠️ No sheet uploaded for {date}.
+                </span>
+                {isAdmin && (
+                  <button 
+                    onClick={() => onUploadSheet(date)}
+                    style={{ backgroundColor: '#7e22ce', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    Upload Sheet Now
+                  </button>
                 )}
+              </div>
+            )}
               </div>
               <span style={{ marginRight: '16px', color: '#0284c7' }}>
                 Tithes: ₹{totalTithes.toLocaleString('en-IN')}
@@ -724,6 +730,41 @@ const MemberCard = React.memo(
 export default function App() {
   const { user, role, signOutUser, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  const [rulesDocUrl, setRulesDocUrl] = useState('');
+  // Automatically load saved Rules & Regulations document on startup
+  useEffect(() => {
+    const savedDoc = localStorage.getItem('afc_rules_doc');
+    if (savedDoc) {
+      setRulesDocUrl(savedDoc);
+    }
+  }, []);
+  const [expenseFilterPeriod, setExpenseFilterPeriod] = useState('current_month');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [rulesFile, setRulesFile] = useState(null);
+
+  const handleUploadRulesDoc = async () => {
+    if (!rulesFile) {
+      alert('Please click "Choose File" first.');
+      return;
+    }
+    try {
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const fileBase64 = uploadEvent.target.result;
+        localStorage.setItem('afc_rules_doc', fileBase64);
+        setRulesDocUrl(fileBase64);
+        setRulesFile(null);
+        alert('Rules & Regulations letter uploaded successfully!');
+      };
+      reader.readAsDataURL(rulesFile);
+    } catch (error) {
+      console.error("Error uploading document: ", error);
+      alert("Failed to upload Rules & Regulations letter.");
+    }
+  };
 
   const [members, setMembers] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -1016,11 +1057,30 @@ export default function App() {
   const canEditPastAttendance = isAdmin;
 
   const visibleExpenses = useMemo(() => {
-    if (isAdmin || isPastor) return expenses;
-    return expenses.filter(
-      (e) => (e.addedBy || '').toLowerCase() === userEmail
-    );
-  }, [expenses, isAdmin, isPastor, userEmail]);
+    return expenses.filter(exp => {
+      // First apply user view permission rule
+      const hasPermission = (isAdmin || isPastor) || (exp.addedBy || '').toLowerCase() === userEmail.toLowerCase();
+      if (!hasPermission) return false;
+
+      // Then apply the date filter period
+      if (!exp.date) return true;
+      const expDate = new Date(exp.date);
+      const today = new Date();
+
+      if (expenseFilterPeriod === 'current_month') {
+        return expDate.getMonth() === today.getMonth() && expDate.getFullYear() === today.getFullYear();
+      }
+      if (expenseFilterPeriod === 'week') {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(today.getDate() - 7);
+        return expDate >= oneWeekAgo && expDate <= today;
+      }
+      if (expenseFilterPeriod === 'year') {
+        return expDate.getFullYear() === today.getFullYear();
+      }
+      return true; // 'all'
+    });
+  }, [expenses, isAdmin, isPastor, userEmail, expenseFilterPeriod]);
 
   const availableTabs = useMemo(() => {
     const tabs = ['dashboard', 'calendar', 'members'];
@@ -2005,16 +2065,16 @@ export default function App() {
         date: selectedDailyDate,
         file: dailyFileObj.file,
         name: dailyFileObj.name,
-        createdAt: serverTimestamp(),
+        note: dailyFileObj.note || '',
+        createdAt: serverTimestamp()
       });
       setShowDailySheetModal(false);
-      setDailyFileObj({ file: null, name: '' });
-      alert(`✅ Daily collection sheet saved permanently for ${selectedDailyDate}!`);
+      setDailyFileObj({ file: null, name: '', note: '' });
+      alert(`✅ Daily collection sheet saved successfully for ${selectedDailyDate}!`);
     } catch (err) {
       alert('Error saving counting sheet: ' + err.message);
     }
   };
-
   const handleAddAdvance = async (e) => {
     e.preventDefault();
     if (!advanceForm.amount) {
@@ -3543,6 +3603,35 @@ export default function App() {
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
             Staff Portal
           </h2>
+          <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#6b21a8' }}>📜 Church Rules & Regulations</h3>
+            <p style={{ fontSize: '13px', color: '#475569', marginBottom: '12px' }}>Click below to view the official signed letter from Pastor Robby.</p>
+            
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+              {rulesDocUrl ? (
+              <button 
+              onClick={() => {
+                const win = window.open();
+                win.document.write(`<iframe src="${rulesDocUrl}" frameborder="0" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`);
+              }}
+              style={{ backgroundColor: '#6b21a8', color: '#fff', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', textDecoration: 'none', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'inline-block' }}
+            >
+              👀 View Rules & Regulations Letter
+            </button>
+              ) : (
+                <span style={{ fontSize: '13px', color: '#dc2626', fontStyle: 'italic' }}>No document uploaded yet.</span>
+              )}
+
+              {isAdmin && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+                  <input type="file" onChange={(e) => setRulesFile(e.target.files[0])} style={{ fontSize: '12px' }} />
+                  <button onClick={handleUploadRulesDoc} style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    📤 Upload / Update Letter
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
 
           {isMonday && (isSumonto || isRuchi) && (
             <div
@@ -4065,6 +4154,60 @@ export default function App() {
       {activeTab === 'dashboard' && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>Dashboard</h2>
+          <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: '16px',
+                marginBottom: '20px',
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                }}
+              >
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#6b21a8' }}>
+                  🎂 Today's Birthdays ({todayBirthdays.length})
+                </h3>
+                {todayBirthdays.length > 0 ? (
+                  todayBirthdays.map((m) => (
+                    <div key={m.id} style={{ fontSize: '13px', color: '#1e293b', marginBottom: '6px' }}>
+                      <strong>{m.name}</strong> ({m.mobile || 'No Mobile'})
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>No birthdays today.</div>
+                )}
+              </div>
+
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                }}
+              >
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#6b21a8' }}>
+                  💍 Today's Marriage Anniversaries ({todayAnniversaries.length})
+                </h3>
+                {todayAnniversaries.length > 0 ? (
+                  todayAnniversaries.map((m) => (
+                    <div key={m.id} style={{ fontSize: '13px', color: '#1e293b', marginBottom: '6px' }}>
+                      <strong>{m.name}</strong> ({m.mobile || 'No Mobile'})
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>No anniversaries today.</div>
+                )}
+              </div>
+            </div>
 
           {isAdmin && (
             <div
@@ -4519,7 +4662,6 @@ export default function App() {
           </div>
         </div>
       )}
-
       {activeTab === 'members' && (
         <div>
           {isAdmin && duplicateNameSet.size > 0 && (
@@ -5168,6 +5310,137 @@ export default function App() {
               </form>
             </div>
           )}
+          <h3
+            style={{
+              color: '#1e293b',
+              borderBottom: '2px solid #e2e8f0',
+              paddingBottom: '10px',
+              marginTop: '20px'
+            }}
+          >
+            Professional Expense Ledger
+            </h3>
+
+{/* Month / Date Filter Dropdown */}
+<div style={{ marginBottom: '15px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Filter View:</label>
+            <select 
+              value={expenseFilterPeriod || 'current_month'} 
+              onChange={(e) => setExpenseFilterPeriod(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#fff', color: '#1e293b' }}
+            >
+              <option value="current_month">📅 Current Month (Default)</option>
+              <option value="all">📂 All Expenses</option>
+              <option value="year">🗓️ This Year</option>
+              <option value="custom">🔍 Custom Date Range</option>
+            </select>
+
+            {expenseFilterPeriod === 'custom' && (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input 
+                  type="date" 
+                  value={customStartDate || ''} 
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                />
+                <span style={{ fontSize: '12px', color: '#64748b' }}>to</span>
+                <input 
+                  type="date" 
+                  value={customEndDate || ''} 
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                />
+              </div>
+            )}
+          </div>
+
+<div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+{visibleExpenses.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #cbd5e1', color: '#64748b' }}>
+                No expense records found.
+              </div>
+            ) : (
+              visibleExpenses.sort((a, b) => b.date.localeCompare(a.date)).map((exp) => (
+                <div
+                  key={exp.id}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', marginBottom: '4px' }}>
+                        📅 {exp.date} | Added by: {exp.addedBy}
+                      </div>
+                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b' }}>
+                        {exp.category}
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#475569', marginTop: '4px' }}>
+                        📝 {exp.detail}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#0284c7', marginTop: '4px', fontWeight: 'bold' }}>
+                        💳 Source: {exp.paymentSource}
+                      </div>
+                      {exp.missingBill ? (
+                        <div style={{ fontSize: '11px', color: '#d97706', marginTop: '4px', fontWeight: 'bold' }}>
+                          ⚠️ No Bill: {exp.missingBillJustification}
+                        </div>
+                      ) : exp.receiptFile ? (
+                        <a href={exp.receiptFile} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px', display: 'inline-block', fontWeight: 'bold' }}>
+                          📎 View Attached Bill
+                        </a>
+                      ) : null}
+                    </div>
+                    
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#dc2626' }}>
+                        ₹{Number(exp.amount).toLocaleString('en-IN')}
+                      </div>
+                      <div
+                        style={{
+                          display: 'inline-block',
+                          marginTop: '6px',
+                          padding: '4px 10px',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          backgroundColor: exp.status === 'Approved' ? '#dcfce7' : exp.status === 'Rejected' ? '#fee2e2' : '#fef9c3',
+                          color: exp.status === 'Approved' ? '#166534' : exp.status === 'Rejected' ? '#991b1b' : '#854d0e',
+                        }}
+                      >
+                        {exp.status === 'Approved' ? '✅ Approved' : exp.status === 'Rejected' ? '❌ Rejected' : '⏳ Pending'}
+                      </div>
+                      {exp.status === 'Rejected' && exp.rejectionReason && (
+                        <div style={{ fontSize: '11px', color: '#dc2626', marginTop: '4px', maxWidth: '200px' }}>
+                          Reason: {exp.rejectionReason}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '12px', flexWrap: 'wrap' }}>
+                    {(isAdmin || exp.addedBy === user.email) && (
+                      <>
+                        <button onClick={() => handleEditExpenseClick(exp)} style={{ backgroundColor: '#f1f5f9', color: '#6b21a8', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>✏️ Edit</button>
+                        <button onClick={() => handleDeleteExpense(exp.id)} style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>🗑️ Delete</button>
+                      </>
+                    )}
+                    
+                    {canApproveExpense && exp.status === 'Pending' && (
+                      <>
+                        <button onClick={() => handleApproveExpense(exp.id)} style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold', marginLeft: 'auto' }}>✅ Approve</button>
+                        <button onClick={() => handleRejectExpense(exp.id)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>❌ Reject</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
 
@@ -5294,6 +5567,56 @@ export default function App() {
                       }}
                     />
                   </div>
+                </div>
+                <div>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#64748b' }}>
+                    Offering Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={offeringForm.date || ''}
+                    onChange={(e) =>
+                      setOfferingForm({
+                        ...offeringForm,
+                        date: e.target.value,
+                      })
+                    }
+                    required
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#f8fafc',
+                      color: '#1e293b',
+                      border: '1px solid #cbd5e1',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      marginTop: '4px',
+                    }}
+                  />
+                </div>
+                  <label style={{ fontSize: '11px', color: '#64748b' }}>
+                    Note (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Add any specific note here..."
+                    value={offeringForm.note || ''}
+                    onChange={(e) =>
+                      setOfferingForm({
+                        ...offeringForm,
+                        note: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#f8fafc',
+                      color: '#1e293b',
+                      border: '1px solid #cbd5e1',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      marginTop: '4px',
+                    }}
+                  />
                 </div>
 
                 <button
@@ -5468,17 +5791,47 @@ export default function App() {
                       }}
                     />
                     {dailyFileObj.name && (
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          color: '#16a34a',
-                          fontWeight: 'bold',
-                          marginTop: '4px',
-                        }}
-                      >
-                        📎 Selected: {dailyFileObj.name}
-                      </div>
-                    )}
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        color: '#16a34a',
+                        fontWeight: 'bold',
+                        marginTop: '4px',
+                      }}
+                    >
+                      📎 Selected: {dailyFileObj.name}
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: '12px' }}>
+                    <label
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        color: '#475569',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Note / Justification (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter any clarification or details..."
+                      value={dailyFileObj.note || ''}
+                      onChange={(e) => setDailyFileObj({ ...dailyFileObj, note: e.target.value })}
+                      style={{
+                        width: '100%',
+                        backgroundColor: '#f8fafc',
+                        color: '#1e293b',
+                        border: '1px solid #cbd5e1',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                      }}
+                    />
+                  </div>
+
                   </div>
                 </div>
 
@@ -5595,5 +5948,6 @@ export default function App() {
         </div>
       )}
     </div>
-  );
+    
+      );
 }
