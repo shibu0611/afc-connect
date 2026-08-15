@@ -4904,14 +4904,29 @@ export default function App() {
                         padding: '8px',
                         borderRadius: '8px',
                       }}
+                      <div style={{ marginTop: '12px' }}>
+                  <label style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '4px' }}>
+                    Anniversary Date (Day, Month & Optional Year)
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <select
+                      value={memberForm.annivDay}
+                      onChange={(e) =>
+                        setMemberForm({
+                          ...memberForm,
+                          annivDay: e.target.value,
+                        })
+                      }
+                      style={{
+                        flex: 1,
+                        backgroundColor: '#f8fafc',
+                        color: '#1e293b',
+                        border: '1px solid #cbd5e1',
+                        padding: '8px',
+                        borderRadius: '8px',
+                      }}
                     >
-                      <option value="">Month *</option>
-                      {MONTH_NAMES.map((m, idx) => (
-                        <option key={m} value={String(idx + 1)}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
+                      
 
                     <select
                       value={memberForm.dobYear}
