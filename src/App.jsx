@@ -732,7 +732,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const [rulesDocUrl, setRulesDocUrl] = useState('');
-  // Automatically load saved Rules & Regulations document on startup
   useEffect(() => {
     const savedDoc = localStorage.getItem('afc_rules_doc');
     if (savedDoc) {
@@ -1058,11 +1057,9 @@ export default function App() {
 
   const visibleExpenses = useMemo(() => {
     return expenses.filter(exp => {
-      // First apply user view permission rule
       const hasPermission = (isAdmin || isPastor) || (exp.addedBy || '').toLowerCase() === userEmail.toLowerCase();
       if (!hasPermission) return false;
 
-      // Then apply the date filter period
       if (!exp.date) return true;
       const expDate = new Date(exp.date);
       const today = new Date();
@@ -1078,7 +1075,7 @@ export default function App() {
       if (expenseFilterPeriod === 'year') {
         return expDate.getFullYear() === today.getFullYear();
       }
-      return true; // 'all'
+      return true;
     });
   }, [expenses, isAdmin, isPastor, userEmail, expenseFilterPeriod]);
 
@@ -4154,60 +4151,122 @@ export default function App() {
       {activeTab === 'dashboard' && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>Dashboard</h2>
+          
+          {/* Today's Special Cards */}
           <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '16px',
+              marginBottom: '20px',
+            }}
+          >
+            <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '16px',
-                marginBottom: '20px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '16px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
               }}
             >
-              <div
-                style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                }}
-              >
-                <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#6b21a8' }}>
-                  🎂 Today's Birthdays ({todayBirthdays.length})
-                </h3>
-                {todayBirthdays.length > 0 ? (
-                  todayBirthdays.map((m) => (
-                    <div key={m.id} style={{ fontSize: '13px', color: '#1e293b', marginBottom: '6px' }}>
-                      <strong>{m.name}</strong> ({m.mobile || 'No Mobile'})
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>No birthdays today.</div>
-                )}
-              </div>
-
-              <div
-                style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                }}
-              >
-                <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#6b21a8' }}>
-                  💍 Today's Marriage Anniversaries ({todayAnniversaries.length})
-                </h3>
-                {todayAnniversaries.length > 0 ? (
-                  todayAnniversaries.map((m) => (
-                    <div key={m.id} style={{ fontSize: '13px', color: '#1e293b', marginBottom: '6px' }}>
-                      <strong>{m.name}</strong> ({m.mobile || 'No Mobile'})
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>No anniversaries today.</div>
-                )}
-              </div>
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#6b21a8' }}>
+                🎂 Today's Birthdays ({todayBirthdays.length})
+              </h3>
+              {todayBirthdays.length > 0 ? (
+                todayBirthdays.map((m) => (
+                  <div key={m.id} style={{ fontSize: '13px', color: '#1e293b', marginBottom: '6px' }}>
+                    <strong>{m.name}</strong> ({m.mobile || 'No Mobile'})
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: '12px', color: '#64748b' }}>No birthdays today.</div>
+              )}
             </div>
+
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '16px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#6b21a8' }}>
+                💍 Today's Marriage Anniversaries ({todayAnniversaries.length})
+              </h3>
+              {todayAnniversaries.length > 0 ? (
+                todayAnniversaries.map((m) => (
+                  <div key={m.id} style={{ fontSize: '13px', color: '#1e293b', marginBottom: '6px' }}>
+                    <strong>{m.name}</strong> ({m.mobile || 'No Mobile'})
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: '12px', color: '#64748b' }}>No anniversaries today.</div>
+              )}
+            </div>
+          </div>
+
+          {/* Current Month's Special Cards */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '16px',
+              marginBottom: '20px',
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '16px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#6b21a8' }}>
+                🎈 This Month's Birthdays ({monthBirthdays.length})
+              </h3>
+              {monthBirthdays.length > 0 ? (
+                <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {monthBirthdays.map((m) => (
+                    <div key={m.id} style={{ fontSize: '12px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px' }}>
+                      <strong>{m.day}th</strong>: {m.name} ({m.mobile || 'No Mobile'})
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: '12px', color: '#64748b' }}>No birthdays this month.</div>
+              )}
+            </div>
+
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '16px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#6b21a8' }}>
+                🎊 This Month's Marriage Anniversaries ({monthAnniversaries.length})
+              </h3>
+              {monthAnniversaries.length > 0 ? (
+                <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {monthAnniversaries.map((m) => (
+                    <div key={m.id} style={{ fontSize: '12px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px' }}>
+                      <strong>{m.day}th</strong>: {m.name} ({m.mobile || 'No Mobile'})
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: '12px', color: '#64748b' }}>No anniversaries this month.</div>
+              )}
+            </div>
+          </div>
 
           {isAdmin && (
             <div
@@ -4857,6 +4916,7 @@ export default function App() {
                   }}
                 />
 
+                {/* Date of Birth Fields (Day, Month, Year) */}
                 <div>
                   <label style={{ fontSize: 11, color: '#64748b' }}>
                     Date of Birth * (Day, Month & Optional Year)
@@ -4904,29 +4964,14 @@ export default function App() {
                         padding: '8px',
                         borderRadius: '8px',
                       }}
-                      <div style={{ marginTop: '12px' }}>
-                  <label style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '4px' }}>
-                    Anniversary Date (Day, Month & Optional Year)
-                  </label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <select
-                      value={memberForm.annivDay}
-                      onChange={(e) =>
-                        setMemberForm({
-                          ...memberForm,
-                          annivDay: e.target.value,
-                        })
-                      }
-                      style={{
-                        flex: 1,
-                        backgroundColor: '#f8fafc',
-                        color: '#1e293b',
-                        border: '1px solid #cbd5e1',
-                        padding: '8px',
-                        borderRadius: '8px',
-                      }}
                     >
-                      
+                      <option value="">Month *</option>
+                      {MONTH_NAMES.map((mName, idx) => (
+                        <option key={mName} value={String(idx + 1)}>
+                          {mName}
+                        </option>
+                      ))}
+                    </select>
 
                     <select
                       value={memberForm.dobYear}
@@ -4953,6 +4998,63 @@ export default function App() {
                           </option>
                         )
                       )}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Anniversary Fields (Day, Month) */}
+                <div>
+                  <label style={{ fontSize: 11, color: '#64748b' }}>
+                    Marriage Anniversary (Day & Month Optional)
+                  </label>
+                  <div
+                    style={{ display: 'flex', gap: '8px', marginTop: '4px' }}
+                  >
+                    <select
+                      value={memberForm.annivDay}
+                      onChange={(e) =>
+                        setMemberForm({ ...memberForm, annivDay: e.target.value })
+                      }
+                      style={{
+                        flex: 1,
+                        backgroundColor: '#f8fafc',
+                        color: '#1e293b',
+                        border: '1px solid #cbd5e1',
+                        padding: '8px',
+                        borderRadius: '8px',
+                      }}
+                    >
+                      <option value="">Day</option>
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                        <option key={d} value={String(d)}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={memberForm.annivMonth}
+                      onChange={(e) =>
+                        setMemberForm({
+                          ...memberForm,
+                          annivMonth: e.target.value,
+                        })
+                      }
+                      style={{
+                        flex: 1,
+                        backgroundColor: '#f8fafc',
+                        color: '#1e293b',
+                        border: '1px solid #cbd5e1',
+                        padding: '8px',
+                        borderRadius: '8px',
+                      }}
+                    >
+                      <option value="">Month</option>
+                      {MONTH_NAMES.map((mName, idx) => (
+                        <option key={mName} value={String(idx + 1)}>
+                          {mName}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -5334,9 +5436,8 @@ export default function App() {
             }}
           >
             Professional Expense Ledger
-            </h3>
+          </h3>
 
-{/* Month / Date Filter Dropdown */}
 <div style={{ marginBottom: '15px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
             <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Filter View:</label>
             <select 
@@ -5349,24 +5450,6 @@ export default function App() {
               <option value="year">🗓️ This Year</option>
               <option value="custom">🔍 Custom Date Range</option>
             </select>
-
-            {expenseFilterPeriod === 'custom' && (
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input 
-                  type="date" 
-                  value={customStartDate || ''} 
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
-                />
-                <span style={{ fontSize: '12px', color: '#64748b' }}>to</span>
-                <input 
-                  type="date" 
-                  value={customEndDate || ''} 
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
-                />
-              </div>
-            )}
           </div>
 
 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -5555,56 +5638,6 @@ export default function App() {
                       ))}
                     </select>
                   </div>
-                  <div>
-              <label style={{ fontSize: '11px', color: '#64748b' }}>
-                Offering Date *
-              </label>
-              <input
-                type="date"
-                value={offeringForm.date || ''}
-                onChange={(e) =>
-                  setOfferingForm({
-                    ...offeringForm,
-                    date: e.target.value,
-                  })
-                }
-                required
-                style={{
-                  width: '100%',
-                  backgroundColor: '#f8fafc',
-                  color: '#1e293b',
-                  border: '1px solid #cbd5e1',
-                  padding: '10px',
-                  borderRadius: '8px',
-                  marginTop: '4px',
-                }}
-              />
-            </div>
-            <div style={{ marginTop: '10px' }}>
-              <label style={{ fontSize: '11px', color: '#64748b' }}>
-                Note (Optional)
-              </label>
-              <input
-                type="text"
-                placeholder="Add any specific note here..."
-                value={offeringForm.note || ''}
-                onChange={(e) =>
-                  setOfferingForm({
-                    ...offeringForm,
-                    note: e.target.value,
-                  })
-                }
-                style={{
-                  width: '100%',
-                  backgroundColor: '#f8fafc',
-                  color: '#1e293b',
-                  border: '1px solid #cbd5e1',
-                  padding: '10px',
-                  borderRadius: '8px',
-                  marginTop: '4px',
-                }}
-              />
-            </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: '11px', color: '#64748b' }}>
                       Amount (₹) *
@@ -5633,7 +5666,6 @@ export default function App() {
                   </div>
                 </div>
                 <div>
-                <div>
                   <label style={{ fontSize: '11px', color: '#64748b' }}>
                     Offering Date *
                   </label>
@@ -5658,6 +5690,7 @@ export default function App() {
                     }}
                   />
                 </div>
+                <div>
                   <label style={{ fontSize: '11px', color: '#64748b' }}>
                     Note (Optional)
                   </label>
@@ -6012,6 +6045,5 @@ export default function App() {
         </div>
       )}
     </div>
-    
-      );
+  );
 }
