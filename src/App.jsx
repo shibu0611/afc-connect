@@ -3607,10 +3607,7 @@ export default function App() {
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
               {rulesDocUrl ? (
               <button 
-              onClick={() => {
-                const win = window.open();
-                win.document.write(`<iframe src="${rulesDocUrl}" frameborder="0" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`);
-              }}
+              onClick={() => window.open(rulesDocUrl, '_blank')}
               style={{ backgroundColor: '#6b21a8', color: '#fff', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', textDecoration: 'none', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'inline-block' }}
             >
               👀 View Rules & Regulations Letter
