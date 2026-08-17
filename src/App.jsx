@@ -2535,10 +2535,15 @@ export default function App() {
 
       {activeTab === 'calendar' && (
         <div>
-          <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
-            Church Calendar & Events
-          </h2>
-
+<h2 style={{ 
+  color: '#6b21a8', 
+  marginBottom: '24px', 
+  textAlign: 'center', 
+  borderBottom: '2px solid #e2e8f0', 
+  paddingBottom: '8px' 
+}}>
+  Church Calendar & Events
+</h2>
           {(isPastor || isAdmin) && (
             <div
               style={{
@@ -5733,49 +5738,7 @@ export default function App() {
             </div>
           )}
 
-          <div
-            style={{
-              backgroundColor: '#f3e8ff',
-              border: '2px dashed #7e22ce',
-              borderRadius: '12px',
-              padding: '16px 20px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '20px',
-            }}
-          >
-            <div>
-              <h3 style={{ margin: 0, color: '#6b21a8', fontSize: '15px' }}>
-                📋 Done recording all tithes & offerings for today?
-              </h3>
-              <p
-                style={{
-                  margin: '4px 0 0 0',
-                  fontSize: '12px',
-                  color: '#475569',
-                }}
-              >
-                Click 'Yes, All Recorded' to attach today's physical counting
-                sheet summary document.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowDailySheetModal(true)}
-              style={{
-                backgroundColor: '#7e22ce',
-                color: '#fff',
-                border: 'none',
-                padding: '10px 20px',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-              }}
-            >
-              ✅ Yes, All Recorded (Upload Sheet)
-            </button>
-          </div>
-
+        
           {showDailySheetModal && (
             <div
               style={{
