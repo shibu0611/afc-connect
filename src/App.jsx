@@ -502,6 +502,7 @@ export default function App() {
   const [attendanceDate, setAttendanceDate] = useState(todayStr);
 
   const [reportModule, setReportModule] = useState('expenses');
+  const [expenseFilterMonth, setExpenseFilterMonth] = useState(currentMonthStr);
   const [reportTimeframe, setReportTimeframe] = useState('monthly');
   const [reportStartDate, setReportStartDate] = useState(todayStr);
   const [reportEndDate, setReportEndDate] = useState(todayStr);
@@ -777,53 +778,17 @@ export default function App() {
   const canEditPastAttendance = isAdmin;
 
   const visibleExpenses = useMemo(() => {
-    const activeOfferingDates = new Set(
-      (offerings || []).map((o) => o.date || todayStr)
-    );
-
-    const sheetDerivedExpenses = [];
-    Object.keys(dailySheets || {}).forEach((dStr) => {
-      if (activeOfferingDates.has(dStr)) {
-        const sheet = dailySheets[dStr];
-        const sheetExps = sheet?.expenses || [];
-        sheetExps.forEach((exp, idx) => {
-          sheetDerivedExpenses.push({
-            id: `sheet-deduction-${dStr}-${idx}`,
-            amount: Number(exp.amount) || 0,
-            category:
-              'Staff & Support (Helper Wages, Guest Speaker Honorarium)',
-            detail: `[Auto-Synced from Daily Sheet] ${
-              exp.desc || 'Counting Sheet Deduction'
-            }`,
-            date: dStr,
-            receiptFile: null,
-            receiptName: 'Pending — Bill / Receipt Upload Required',
-            missingBill: true,
-            missingBillJustification:
-              'Auto-deducted from daily collection sheet. Bill upload pending.',
-            status: 'Pending',
-            paymentSource: 'Deducted from Daily Counting Sheet',
-            addedBy: 'Daily Counting Sheet System',
-          });
-        });
-      }
-    });
-
-    const combinedList = [...(expenses || []), ...sheetDerivedExpenses];
-
-    if (isAdmin || isPastor) return combinedList;
-    return combinedList.filter(
-      (e) => (e.addedBy || '').toLowerCase() === userEmail
-    );
-  }, [
-    expenses,
-    offerings,
-    dailySheets,
-    isAdmin,
-    isPastor,
-    userEmail,
-    todayStr,
-  ]);
+    let list = expenses || [];
+    if (!isAdmin && !isPastor) {
+      list = list.filter(
+        (e) => (e.addedBy || '').toLowerCase() === userEmail
+      );
+    }
+    if (expenseFilterMonth !== 'all') {
+      list = list.filter((e) => e.date?.startsWith(expenseFilterMonth));
+    }
+    return list;
+  }, [expenses, isAdmin, isPastor, userEmail, expenseFilterMonth]);
 
   const availableTabs = useMemo(() => {
     const tabs = ['dashboard', 'calendar', 'members'];
@@ -1883,12 +1848,7 @@ export default function App() {
     }
 
     const isPastDate = expenseForm.date < todayStr;
-    if (
-      isPastDate &&
-      !isAdmin &&
-      !editingExpense &&
-      !expenseForm.delayReason.trim()
-    ) {
+    if (isPastDate && !editingExpense && !expenseForm.delayReason.trim()) {
       alert(
         '⚠️ This bill is not from today! You MUST enter a logical reason for the delayed submission before proceeding.'
       );
@@ -3574,6 +3534,356 @@ export default function App() {
             Staff Portal
           </h2>
 
+          {isAdmin && (
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '12px',
+                padding: '16px 20px',
+                marginBottom: '20px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <div>
+                  <h3 style={{ margin: 0, color: '#6b21a8', fontSize: '16px' }}>
+                    Staff & Bank Accounts Manager (Secured by Password)
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: '12px',
+                      color: '#64748b',
+                      margin: '4px 0 0 0',
+                    }}
+                  >
+                    Manage staff accounts, full bank account numbers, and base
+                    salaries for future salary slips.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddStaffModal(!showAddStaffModal)}
+                  style={{
+                    backgroundColor: '#7e22ce',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 4px rgba(126,34,206,0.2)',
+                  }}
+                >
+                  {showAddStaffModal
+                    ? '✕ Close Form'
+                    : '➕ Add New Staff / Bank Account'}
+                </button>
+              </div>
+
+              {showAddStaffModal && (
+                <div
+                  style={{
+                    marginTop: '16px',
+                    borderTop: '1px solid #e2e8f0',
+                    paddingTop: '16px',
+                  }}
+                >
+                  <h4
+                    style={{
+                      margin: '0 0 10px 0',
+                      fontSize: '14px',
+                      color: '#d97706',
+                    }}
+                  >
+                    {editingStaffName
+                      ? `🔐 Edit Staff Profile (${editingStaffName})`
+                      : '🔐 Enter New Staff Details'}
+                  </h4>
+
+                  <form
+                    onSubmit={handleSaveStaffProfile}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <input
+                        placeholder="Full Official Name *"
+                        value={staffForm.name}
+                        onChange={(e) =>
+                          setStaffForm({ ...staffForm, name: e.target.value })
+                        }
+                        required
+                        style={{
+                          flex: 2,
+                          backgroundColor: '#f8fafc',
+                          color: '#1e293b',
+                          border: '1px solid #cbd5e1',
+                          padding: '10px',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <input
+                        placeholder="Employee ID (e.g. EMP004)"
+                        value={staffForm.empId}
+                        onChange={(e) =>
+                          setStaffForm({ ...staffForm, empId: e.target.value })
+                        }
+                        style={{
+                          flex: 1,
+                          backgroundColor: '#f8fafc',
+                          color: '#1e293b',
+                          border: '1px solid #cbd5e1',
+                          padding: '10px',
+                          borderRadius: '8px',
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <input
+                        placeholder="Designation (e.g. Church Staff)"
+                        value={staffForm.designation}
+                        onChange={(e) =>
+                          setStaffForm({
+                            ...staffForm,
+                            designation: e.target.value,
+                          })
+                        }
+                        style={{
+                          flex: 1,
+                          backgroundColor: '#f8fafc',
+                          color: '#1e293b',
+                          border: '1px solid #cbd5e1',
+                          padding: '10px',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <input
+                        placeholder="Email Address"
+                        value={staffForm.email}
+                        onChange={(e) =>
+                          setStaffForm({ ...staffForm, email: e.target.value })
+                        }
+                        style={{
+                          flex: 1,
+                          backgroundColor: '#f8fafc',
+                          color: '#1e293b',
+                          border: '1px solid #cbd5e1',
+                          padding: '10px',
+                          borderRadius: '8px',
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <input
+                        placeholder="Bank Name (e.g. HDFC Bank)"
+                        value={staffForm.bankName}
+                        onChange={(e) =>
+                          setStaffForm({
+                            ...staffForm,
+                            bankName: e.target.value,
+                          })
+                        }
+                        style={{
+                          flex: 2,
+                          backgroundColor: '#f8fafc',
+                          color: '#1e293b',
+                          border: '1px solid #cbd5e1',
+                          padding: '10px',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <input
+                        placeholder="Full Bank A/c Number * (e.g. 123456789012)"
+                        value={staffForm.accountNumber}
+                        onChange={(e) =>
+                          setStaffForm({
+                            ...staffForm,
+                            accountNumber: e.target.value,
+                          })
+                        }
+                        required
+                        style={{
+                          flex: 2,
+                          backgroundColor: '#f8fafc',
+                          color: '#1e293b',
+                          border: '1px solid #cbd5e1',
+                          padding: '10px',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <input
+                        type="number"
+                        placeholder="Base Monthly Salary (₹) *"
+                        value={staffForm.baseSalary}
+                        onChange={(e) =>
+                          setStaffForm({
+                            ...staffForm,
+                            baseSalary: e.target.value,
+                          })
+                        }
+                        required
+                        style={{
+                          flex: 1,
+                          backgroundColor: '#f8fafc',
+                          color: '#1e293b',
+                          border: '1px solid #cbd5e1',
+                          padding: '10px',
+                          borderRadius: '8px',
+                        }}
+                      />
+                    </div>
+
+                    <div
+                      style={{ display: 'flex', gap: '8px', marginTop: '6px' }}
+                    >
+                      <button
+                        type="submit"
+                        style={{
+                          backgroundColor: '#16a34a',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '10px 16px',
+                          borderRadius: '8px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {editingStaffName
+                          ? '🔒 Update Staff Profile'
+                          : '🔒 Save New Staff Account'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddStaffModal(false);
+                          setEditingStaffName(null);
+                          setStaffForm({
+                            name: '',
+                            empId: '',
+                            designation: '',
+                            email: '',
+                            bankName: '',
+                            accountNumber: '',
+                            baseSalary: '',
+                          });
+                        }}
+                        style={{
+                          backgroundColor: '#e2e8f0',
+                          color: '#334155',
+                          border: 'none',
+                          padding: '10px 16px',
+                          borderRadius: '8px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* CURRENT STAFF LIST TABLE */}
+              <div
+                style={{
+                  marginTop: '16px',
+                  borderTop: '1px solid #e2e8f0',
+                  paddingTop: '12px',
+                }}
+              >
+                <h4
+                  style={{
+                    margin: '0 0 8px 0',
+                    fontSize: '13px',
+                    color: '#6b21a8',
+                  }}
+                >
+                  Active Staff Accounts ({Object.keys(staffProfiles).length}):
+                </h4>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                  }}
+                >
+                  {Object.keys(staffProfiles).map((sName) => {
+                    const prof = staffProfiles[sName];
+                    return (
+                      <div
+                        key={sName}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid #cbd5e1',
+                          padding: '10px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                        }}
+                      >
+                        <div>
+                          <strong>{sName}</strong> ({prof.designation}) — 💳{' '}
+                          {prof.bankName} (A/c:{' '}
+                          <strong>
+                            {prof.accountNumber || prof.accountLast4}
+                          </strong>
+                          ) — 💰 ₹{prof.baseSalary?.toLocaleString('en-IN')}
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            onClick={() => handleEditStaffClick(sName)}
+                            style={{
+                              backgroundColor: '#e2e8f0',
+                              color: '#6b21a8',
+                              border: 'none',
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            🔐 Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStaffProfile(sName)}
+                            style={{
+                              backgroundColor: '#fef2f2',
+                              color: '#dc2626',
+                              border: '1px solid #fca5a5',
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {isMonday && (isSumonto || isRuchi) && (
             <div
               style={{
@@ -4341,356 +4651,6 @@ export default function App() {
       {activeTab === 'dashboard' && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>Dashboard</h2>
-
-          {isAdmin && (
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #cbd5e1',
-                borderRadius: '12px',
-                padding: '16px 20px',
-                marginBottom: '20px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <div>
-                  <h3 style={{ margin: 0, color: '#6b21a8', fontSize: '16px' }}>
-                    Staff & Bank Accounts Manager (Secured by Password)
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: '12px',
-                      color: '#64748b',
-                      margin: '4px 0 0 0',
-                    }}
-                  >
-                    Manage staff accounts, full bank account numbers, and base
-                    salaries for future salary slips.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowAddStaffModal(!showAddStaffModal)}
-                  style={{
-                    backgroundColor: '#7e22ce',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    fontWeight: 'bold',
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(126,34,206,0.2)',
-                  }}
-                >
-                  {showAddStaffModal
-                    ? '✕ Close Form'
-                    : '➕ Add New Staff / Bank Account'}
-                </button>
-              </div>
-
-              {showAddStaffModal && (
-                <div
-                  style={{
-                    marginTop: '16px',
-                    borderTop: '1px solid #e2e8f0',
-                    paddingTop: '16px',
-                  }}
-                >
-                  <h4
-                    style={{
-                      margin: '0 0 10px 0',
-                      fontSize: '14px',
-                      color: '#d97706',
-                    }}
-                  >
-                    {editingStaffName
-                      ? `🔐 Edit Staff Profile (${editingStaffName})`
-                      : '🔐 Enter New Staff Details'}
-                  </h4>
-
-                  <form
-                    onSubmit={handleSaveStaffProfile}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '10px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <input
-                        placeholder="Full Official Name *"
-                        value={staffForm.name}
-                        onChange={(e) =>
-                          setStaffForm({ ...staffForm, name: e.target.value })
-                        }
-                        required
-                        style={{
-                          flex: 2,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                      <input
-                        placeholder="Employee ID (e.g. EMP004)"
-                        value={staffForm.empId}
-                        onChange={(e) =>
-                          setStaffForm({ ...staffForm, empId: e.target.value })
-                        }
-                        style={{
-                          flex: 1,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <input
-                        placeholder="Designation (e.g. Church Staff)"
-                        value={staffForm.designation}
-                        onChange={(e) =>
-                          setStaffForm({
-                            ...staffForm,
-                            designation: e.target.value,
-                          })
-                        }
-                        style={{
-                          flex: 1,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                      <input
-                        placeholder="Email Address"
-                        value={staffForm.email}
-                        onChange={(e) =>
-                          setStaffForm({ ...staffForm, email: e.target.value })
-                        }
-                        style={{
-                          flex: 1,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <input
-                        placeholder="Bank Name (e.g. HDFC Bank)"
-                        value={staffForm.bankName}
-                        onChange={(e) =>
-                          setStaffForm({
-                            ...staffForm,
-                            bankName: e.target.value,
-                          })
-                        }
-                        style={{
-                          flex: 2,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                      <input
-                        placeholder="Full Bank A/c Number * (e.g. 123456789012)"
-                        value={staffForm.accountNumber}
-                        onChange={(e) =>
-                          setStaffForm({
-                            ...staffForm,
-                            accountNumber: e.target.value,
-                          })
-                        }
-                        required
-                        style={{
-                          flex: 2,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                      <input
-                        type="number"
-                        placeholder="Base Monthly Salary (₹) *"
-                        value={staffForm.baseSalary}
-                        onChange={(e) =>
-                          setStaffForm({
-                            ...staffForm,
-                            baseSalary: e.target.value,
-                          })
-                        }
-                        required
-                        style={{
-                          flex: 1,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                    </div>
-
-                    <div
-                      style={{ display: 'flex', gap: '8px', marginTop: '6px' }}
-                    >
-                      <button
-                        type="submit"
-                        style={{
-                          backgroundColor: '#16a34a',
-                          color: '#fff',
-                          border: 'none',
-                          padding: '10px 16px',
-                          borderRadius: '8px',
-                          fontWeight: 'bold',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {editingStaffName
-                          ? '🔒 Update Staff Profile'
-                          : '🔒 Save New Staff Account'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowAddStaffModal(false);
-                          setEditingStaffName(null);
-                          setStaffForm({
-                            name: '',
-                            empId: '',
-                            designation: '',
-                            email: '',
-                            bankName: '',
-                            accountNumber: '',
-                            baseSalary: '',
-                          });
-                        }}
-                        style={{
-                          backgroundColor: '#e2e8f0',
-                          color: '#334155',
-                          border: 'none',
-                          padding: '10px 16px',
-                          borderRadius: '8px',
-                          fontWeight: 'bold',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
-
-              {/* CURRENT STAFF LIST TABLE */}
-              <div
-                style={{
-                  marginTop: '16px',
-                  borderTop: '1px solid #e2e8f0',
-                  paddingTop: '12px',
-                }}
-              >
-                <h4
-                  style={{
-                    margin: '0 0 8px 0',
-                    fontSize: '13px',
-                    color: '#6b21a8',
-                  }}
-                >
-                  Active Staff Accounts ({Object.keys(staffProfiles).length}):
-                </h4>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                  }}
-                >
-                  {Object.keys(staffProfiles).map((sName) => {
-                    const prof = staffProfiles[sName];
-                    return (
-                      <div
-                        key={sName}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          backgroundColor: '#f8fafc',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                        }}
-                      >
-                        <div>
-                          <strong>{sName}</strong> ({prof.designation}) — 💳{' '}
-                          {prof.bankName} (A/c:{' '}
-                          <strong>
-                            {prof.accountNumber || prof.accountLast4}
-                          </strong>
-                          ) — 💰 ₹{prof.baseSalary?.toLocaleString('en-IN')}
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button
-                            onClick={() => handleEditStaffClick(sName)}
-                            style={{
-                              backgroundColor: '#e2e8f0',
-                              color: '#6b21a8',
-                              border: 'none',
-                              padding: '4px 10px',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            🔐 Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteStaffProfile(sName)}
-                            style={{
-                              backgroundColor: '#fef2f2',
-                              color: '#dc2626',
-                              border: '1px solid #fca5a5',
-                              padding: '4px 10px',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            🗑️ Delete
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
 
           <div
             style={{
@@ -6073,7 +6033,7 @@ export default function App() {
                   )}
                 </div>
 
-                {expenseForm.date < todayStr && !isAdmin && (
+                {expenseForm.date < todayStr && (
                   <div
                     style={{
                       backgroundColor: '#fef3c7',
@@ -6116,6 +6076,7 @@ export default function App() {
                           delayReason: e.target.value,
                         })
                       }
+                      required
                       style={{
                         width: '100%',
                         backgroundColor: '#ffffff',
@@ -6150,7 +6111,31 @@ export default function App() {
             </div>
           )}
 
-          <h3 style={{ color: '#1e293b' }}>Expense History</h3>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+  <h3 style={{ color: '#1e293b', margin: 0 }}>Expense History</h3>
+
+  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+    <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Filter Month:</label>
+    <select
+      value={expenseFilterMonth}
+      onChange={(e) => setExpenseFilterMonth(e.target.value)}
+      style={{ backgroundColor: '#ffffff', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '8px', color: '#1e293b', fontWeight: 'bold' }}
+    >
+      <option value="all">🌐 All History (Show All)</option>
+      <option value={currentMonthStr}>🗓️ Current Month</option>
+      <option value="2026-08">August 2026</option>
+      <option value="2026-07">July 2026</option>
+    </select>
+  </div>
+</div>
+<div style={{ backgroundColor: '#f3e8ff', border: '1px solid #d8b4fe', padding: '12px 16px', borderRadius: '10px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+  <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#6b21a8' }}>
+    📊 Total Expenses for Selected Period:
+  </span>
+  <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#16a34a' }}>
+    ₹{visibleExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0).toLocaleString('en-IN')}
+  </span>
+</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {visibleExpenses.map((e) => (
               <div
@@ -6334,15 +6319,22 @@ export default function App() {
                         🧾 Bill/Receipt Attached:
                       </span>
                       <a
-                        href={e.receiptFile}
-                        download="Expense_Bill.jpg"
+                        href="#"
+                        onClick={(evt) => {
+                          evt.preventDefault();
+                          const win = window.open();
+                          win.document.write(
+                            `<iframe src="${e.receiptFile}" frameborder="0" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`
+                          );
+                        }}
                         style={{
-                          color: '#16a34a',
+                          color: '#7e22ce',
                           fontWeight: 'bold',
                           textDecoration: 'underline',
+                          cursor: 'pointer',
                         }}
                       >
-                        📥 Download Bill
+                        View / Download Bill
                       </a>
                     </div>
                   ) : (
@@ -6659,6 +6651,53 @@ export default function App() {
             </div>
           )}
 
+          {/* CONFIRM ALL RECORDED & UPLOAD COUNTING SHEET BUTTON */}
+          <div
+            style={{
+              backgroundColor: '#f3e8ff',
+              border: '2px dashed #7e22ce',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
+            <div>
+              <h3 style={{ margin: 0, color: '#6b21a8', fontSize: '15px' }}>
+                📋 Done recording all tithes & offerings for today?
+              </h3>
+              <p
+                style={{
+                  margin: '4px 0 0 0',
+                  fontSize: '12px',
+                  color: '#475569',
+                }}
+              >
+                Click 'Yes, All Recorded' to attach today's physical counting
+                sheet summary document.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDailySheetModal(true)}
+              style={{
+                backgroundColor: '#7e22ce',
+                color: '#fff',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(126,34,206,0.3)',
+              }}
+            >
+              ✅ Yes, All Recorded (Upload Sheet)
+            </button>
+          </div>
+
           {/* DAILY SHEET POPUP MODAL */}
           {showDailySheetModal && (
             <div
@@ -6960,125 +6999,6 @@ export default function App() {
             </div>
           )}
 
-          {/* SIMPLIFIED 2-CARD MONTHLY FINANCIAL SUMMARY BANNER */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '16px',
-              marginBottom: '20px',
-            }}
-          >
-            {/* Card 1: Total Tithes & Offerings Combined */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #cbd5e1',
-                borderTop: '4px solid #7e22ce',
-                padding: '18px',
-                borderRadius: '12px',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: '13px',
-                  color: '#64748b',
-                  fontWeight: 'bold',
-                }}
-              >
-                💰 This Month's Tithes & Offerings (Total)
-              </div>
-              <div
-                style={{
-                  fontSize: '24px',
-                  fontWeight: 'bold',
-                  color: '#6b21a8',
-                  marginTop: '6px',
-                }}
-              >
-                ₹
-                {(offerings || [])
-                  .filter((o) => {
-                    const d = new Date(o.date || todayStr);
-                    return (
-                      d.getMonth() === currentMonth &&
-                      d.getFullYear() === currentYear
-                    );
-                  })
-                  .reduce((sum, o) => sum + Number(o.amount || 0), 0)
-                  .toLocaleString('en-IN')}
-              </div>
-            </div>
-
-            {/* Card 2: Total Month Expenses (Tab Expenses + Sheet Cash Deductions) */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #cbd5e1',
-                borderTop: '4px solid #dc2626',
-                padding: '18px',
-                borderRadius: '12px',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: '13px',
-                  color: '#64748b',
-                  fontWeight: 'bold',
-                }}
-              >
-                📉 This Month's Expenses (All Sources)
-              </div>
-              <div
-                style={{
-                  fontSize: '24px',
-                  fontWeight: 'bold',
-                  color: '#dc2626',
-                  marginTop: '6px',
-                }}
-              >
-                ₹
-                {(() => {
-                  const tabExpensesSum = (expenses || [])
-                    .filter((e) => {
-                      const d = new Date(e.date || todayStr);
-                      return (
-                        d.getMonth() === currentMonth &&
-                        d.getFullYear() === currentYear &&
-                        e.status === 'Approved'
-                      );
-                    })
-                    .reduce((sum, e) => sum + Number(e.amount || 0), 0);
-
-                  const sheetDeductionsSum = Object.keys(dailySheets || {})
-                    .filter((dStr) => {
-                      const d = new Date(dStr);
-                      return (
-                        d.getMonth() === currentMonth &&
-                        d.getFullYear() === currentYear
-                      );
-                    })
-                    .reduce((total, dStr) => {
-                      const sheetExps = dailySheets[dStr]?.expenses || [];
-                      return (
-                        total +
-                        sheetExps.reduce(
-                          (s, exp) => s + (Number(exp.amount) || 0),
-                          0
-                        )
-                      );
-                    }, 0);
-
-                  return (tabExpensesSum + sheetDeductionsSum).toLocaleString(
-                    'en-IN'
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
-
           <h3
             style={{
               color: '#1e293b',
@@ -7205,18 +7125,30 @@ export default function App() {
                                           (f, idx) => (
                                             <a
                                               key={idx}
-                                              href={f}
-                                              download={`Sheet_${idx + 1}.jpg`}
+                                              href="#"
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                const win = window.open();
+                                                win.document.write(
+                                                  `<iframe src="${
+                                                    f.file || f
+                                                  }" frameborder="0" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`
+                                                );
+                                              }}
                                               style={{
                                                 fontSize: '12px',
                                                 color: '#16a34a',
                                                 fontWeight: 'bold',
                                                 textDecoration: 'underline',
-                                                display: 'inline-block',
-                                                marginRight: '10px',
+                                                backgroundColor: '#dcfce7',
+                                                padding: '4px 8px',
+                                                borderRadius: '6px',
+                                                border: '1px solid #86efac',
+                                                cursor: 'pointer',
                                               }}
                                             >
-                                              📥 Download Sheet {idx + 1}
+                                              &gt; View Sheet {idx + 1} (
+                                              {f.name || 'Document'})
                                             </a>
                                           )
                                         )
