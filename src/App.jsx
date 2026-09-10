@@ -16,6 +16,8 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
 } from 'firebase/auth';
+import UserManagement from './components/UserManagement';
+import ChangePassword from './components/ChangePassword';
 import * as XLSX from 'xlsx';
 import './App.css';
 
@@ -33,6 +35,12 @@ const MONTH_NAMES = [
   'Nov',
   'Dec',
 ];
+
+const STAFF_WEEKLY_OFFS = {
+  "Sumonto Christian": ["Monday"],
+  "Aruni Nayak": ["Monday"],
+  "Surender Messey": ["Tuesday", "Thursday", "Saturday"]
+};
 
 const INITIAL_STAFF_PROFILES = {
   'Sumonto Christian': {
@@ -255,6 +263,247 @@ const DEFAULT_OFFERING_CATEGORIES = [
 ];
 
 const PAYMENT_METHODS = ['Cash', 'UPI / Online'];
+
+function DateOfferingTableCard({
+  date,
+  dateItems,
+  sortedTithes,
+  nonTithes,
+  totalTithes,
+  totalOfferings,
+  grandTotal,
+  isAdmin,
+  dailySheets,
+  todayStr,
+  onEditOffering,
+  onDeleteOffering,
+  onUploadSheet,
+  onQuickAddForDate,
+}) {
+  const [showTithes, setShowTithes] = useState(false);
+  const sheet = dailySheets[date];
+
+  return (
+    <div
+      style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #cbd5e1',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: '#f3e8ff',
+          padding: '12px 16px',
+          fontWeight: 'bold',
+          color: '#6b21a8',
+          fontSize: '15px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          borderBottom: '1px solid #cbd5e1',
+          flexWrap: 'wrap',
+          gap: '8px',
+        }}
+      >
+        <span>📅 Date: {date}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {isAdmin && (
+            <button
+              onClick={() => onQuickAddForDate(date)}
+              style={{
+                backgroundColor: '#7e22ce',
+                color: '#fff',
+                border: 'none',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+              }}
+            >
+              ➕ Add, Edit or Delete Offering for {date}
+            </button>
+          )}
+          <span style={{ fontSize: '13px', color: '#16a34a' }}>
+            Date Total: ₹{grandTotal.toLocaleString('en-IN')}
+          </span>
+        </div>
+      </div>
+
+      <table
+        style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          textAlign: 'left',
+          fontSize: '13px',
+        }}
+      >
+        <thead
+          style={{
+            backgroundColor: '#f8fafc',
+            color: '#475569',
+            borderBottom: '2px solid #cbd5e1',
+          }}
+        >
+          <tr>
+            <th style={{ padding: '12px 16px' }}>Giver / Source</th>
+            <th style={{ padding: '12px 16px' }}>Category</th>
+            <th style={{ padding: '12px 16px' }}>Method</th>
+            <th style={{ padding: '12px 16px', textAlign: 'right' }}>Amount</th>
+            {isAdmin && (
+              <th style={{ padding: '12px 16px', textAlign: 'center' }}>Actions</th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {sortedTithes.length > 0 && (
+            <>
+              <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fdf4ff' }}>
+                <td style={{ padding: '12px 16px', fontWeight: 'bold', color: '#7e22ce' }}>
+                  <button
+                    onClick={() => setShowTithes(!showTithes)}
+                    style={{
+                      backgroundColor: '#7e22ce',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      marginRight: '8px',
+                    }}
+                  >
+                    {showTithes ? '▼ Hide Tithe Givers' : '▶ View Tithe Givers'}
+                  </button>
+                  Tithes Collected ({sortedTithes.length} givers)
+                </td>
+                <td style={{ padding: '12px 16px', color: '#334155' }}>Tithe</td>
+                <td style={{ padding: '12px 16px', color: '#64748b' }}>Mixed</td>
+                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'bold', color: '#16a34a', fontSize: '14px' }}>
+                  ₹{totalTithes.toLocaleString('en-IN')}
+                </td>
+                {isAdmin && <td style={{ padding: '12px 16px' }}></td>}
+              </tr>
+
+              {showTithes &&
+                sortedTithes.map((t) => (
+                  <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: '#faf5ff' }}>
+                    <td style={{ padding: '10px 16px 10px 32px', color: '#1e293b', fontSize: '12px' }}>
+                      ↳ {t.memberName}
+                      {t.note && <span style={{ color: '#94a3b8', fontSize: '11px' }}> (Note: {t.note})</span>}
+                    </td>
+                    <td style={{ padding: '10px 16px', color: '#334155', fontSize: '12px' }}>Tithe</td>
+                    <td style={{ padding: '10px 16px', color: '#64748b', fontSize: '12px' }}>{t.method || 'Cash'}</td>
+                    <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 'bold', color: '#16a34a', fontSize: '12px' }}>
+                      ₹{Number(t.amount).toLocaleString('en-IN')}
+                    </td>
+                    {isAdmin && (
+                      <td style={{ padding: '10px 16px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => onEditOffering(t)}
+                          style={{ backgroundColor: '#f1f5f9', color: '#6b21a8', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer', fontWeight: 'bold', marginRight: '4px' }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => onDeleteOffering(t.id)}
+                          style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+            </>
+          )}
+
+          {nonTithes.map((o, idx) => {
+            let displayGiver = o.memberName || 'Congregation / General';
+            if (displayGiver.includes('Anonymous')) displayGiver = 'Congregation / General';
+
+            return (
+              <tr key={o.id} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                <td style={{ padding: '12px 16px', fontWeight: 'bold', color: '#1e293b' }}>
+                  {displayGiver}
+                  {o.note && <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'normal' }}>Note: {o.note}</div>}
+                </td>
+                <td style={{ padding: '12px 16px', color: '#334155' }}>{o.category}</td>
+                <td style={{ padding: '12px 16px', color: '#64748b' }}>{o.method || 'Cash'}</td>
+                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'bold', color: '#16a34a', fontSize: '14px' }}>
+                  ₹{Number(o.amount).toLocaleString('en-IN')}
+                </td>
+                {isAdmin && (
+                  <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                    <button
+                      onClick={() => onEditOffering(o)}
+                      style={{ backgroundColor: '#f1f5f9', color: '#6b21a8', border: '1px solid #cbd5e1', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold', marginRight: '6px' }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => onDeleteOffering(o.id)}
+                      style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot style={{ backgroundColor: '#f1f5f9', borderTop: '2px solid #cbd5e1' }}>
+          <tr>
+            <td colSpan={isAdmin ? 4 : 3} style={{ padding: '16px', textAlign: 'right', fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>
+              <div style={{ float: 'left', textAlign: 'left' }}>
+              {sheet ? (
+              <button 
+                onClick={() => {
+                  const win = window.open();
+                  win.document.write(`<html><head><title>${sheet.name}</title></head><body style="margin:0;background:#000;display:flex;justify-content:center;align-items:center;height:100vh;"><img src="${sheet.file}" style="max-width:100%;max-height:100%;object-fit:contain;" /></body></html>`);
+                }}
+                style={{ backgroundColor: 'transparent', border: 'none', color: '#16a34a', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontSize: '13px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              >
+                📄 View Daily Counting Sheet ({sheet.name})
+              </button>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '11px', color: '#dc2626', fontStyle: 'italic' }}>
+                  ⚠️ No sheet uploaded for {date}.
+                </span>
+                {isAdmin && (
+                  <button 
+                    onClick={() => onUploadSheet(date)}
+                    style={{ backgroundColor: '#7e22ce', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    Upload Sheet Now
+                  </button>
+                )}
+              </div>
+            )}
+              </div>
+              <span style={{ marginRight: '16px', color: '#0284c7' }}>
+                Tithes: ₹{totalTithes.toLocaleString('en-IN')}
+              </span>
+              <span style={{ marginRight: '16px', color: '#ea580c' }}>
+                Offerings: ₹{totalOfferings.toLocaleString('en-IN')}
+              </span>
+              Grand Total:
+            </td>
+            <td colSpan="2" style={{ padding: '16px', textAlign: 'left', fontWeight: 'bold', color: '#16a34a', fontSize: '16px' }}>
+              ₹{grandTotal.toLocaleString('en-IN')}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
 
 const MemberCard = React.memo(
   ({
@@ -482,6 +731,40 @@ export default function App() {
   const { user, role, signOutUser, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
+  const [rulesDocUrl, setRulesDocUrl] = useState('');
+  useEffect(() => {
+    const savedDoc = localStorage.getItem('afc_rules_doc');
+    if (savedDoc) {
+      setRulesDocUrl(savedDoc);
+    }
+  }, []);
+  const [expenseFilterPeriod, setExpenseFilterPeriod] = useState('current_month');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [rulesFile, setRulesFile] = useState(null);
+
+  const handleUploadRulesDoc = async () => {
+    if (!rulesFile) {
+      alert('Please click "Choose File" first.');
+      return;
+    }
+    try {
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const fileBase64 = uploadEvent.target.result;
+        localStorage.setItem('afc_rules_doc', fileBase64);
+        setRulesDocUrl(fileBase64);
+        setRulesFile(null);
+        alert('Rules & Regulations letter uploaded successfully!');
+      };
+      reader.readAsDataURL(rulesFile);
+    } catch (error) {
+      console.error("Error uploading document: ", error);
+      alert("Failed to upload Rules & Regulations letter.");
+    }
+  };
+
   const [members, setMembers] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [offerings, setOfferings] = useState([]);
@@ -495,6 +778,7 @@ export default function App() {
   const [offeringCategories, setOfferingCategories] = useState(
     DEFAULT_OFFERING_CATEGORIES
   );
+  const [offeringFilterMonth, setOfferingFilterMonth] = useState('current');
   const [selectedMemberIds, setSelectedMemberIds] = useState([]);
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -502,7 +786,6 @@ export default function App() {
   const [attendanceDate, setAttendanceDate] = useState(todayStr);
 
   const [reportModule, setReportModule] = useState('expenses');
-  const [expenseFilterMonth, setExpenseFilterMonth] = useState(currentMonthStr);
   const [reportTimeframe, setReportTimeframe] = useState('monthly');
   const [reportStartDate, setReportStartDate] = useState(todayStr);
   const [reportEndDate, setReportEndDate] = useState(todayStr);
@@ -564,10 +847,10 @@ export default function App() {
       `AFC_${reportModule.toUpperCase()}_Report_${todayStr}.xlsx`
     );
   };
+
   const [selectedPayrollMonth, setSelectedPayrollMonth] =
     useState(currentMonthStr);
   const [selectedSalarySlipStaff, setSelectedSalarySlipStaff] = useState(null);
-
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
 
   const [memberForm, setMemberForm] = useState({
@@ -636,24 +919,9 @@ export default function App() {
     receiptName: '',
   });
   const [editingOffering, setEditingOffering] = useState(null);
-  const [dailySheets, setDailySheets] = useState(() => {
-    try {
-      const saved = localStorage.getItem('dailySheets_data');
-      return saved ? JSON.parse(saved) : {};
-    } catch (e) {
-      return {};
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('dailySheets_data', JSON.stringify(dailySheets));
-    } catch (e) {}
-  }, [dailySheets]);
+  const [dailySheets, setDailySheets] = useState({});
   const [selectedDailyDate, setSelectedDailyDate] = useState(todayStr);
   const [dailyFileObj, setDailyFileObj] = useState({ file: null, name: '' });
-  const [dailySheetNote, setDailySheetNote] = useState('');
-  const [dailyCashDeductionsList, setDailyCashDeductionsList] = useState([]);
   const [showDailySheetModal, setShowDailySheetModal] = useState(false);
 
   const [eventForm, setEventForm] = useState({
@@ -685,6 +953,17 @@ export default function App() {
 
     const unsubOfferings = onSnapshot(collection(db, 'offerings'), (snap) => {
       setOfferings(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+
+    const unsubSheets = onSnapshot(collection(db, 'daily_sheets'), (snap) => {
+      const sheetsMap = {};
+      snap.docs.forEach((d) => {
+        const data = d.data();
+        if (data.date) {
+          sheetsMap[data.date] = { file: data.file, name: data.name };
+        }
+      });
+      setDailySheets(sheetsMap);
     });
 
     const unsubAttendance = onSnapshot(collection(db, 'attendance'), (snap) => {
@@ -723,6 +1002,7 @@ export default function App() {
 
     return () => {
       unsubMembers();
+      unsubSheets();
       unsubExpenses();
       unsubOfferings();
       unsubAttendance();
@@ -774,21 +1054,31 @@ export default function App() {
 
   const canAddExpense = (isAdmin || isPastor || isStaff) && !isRuchi;
   const canApproveExpense = isPastor || isAdmin;
-
   const canEditPastAttendance = isAdmin;
 
   const visibleExpenses = useMemo(() => {
-    let list = expenses || [];
-    if (!isAdmin && !isPastor) {
-      list = list.filter(
-        (e) => (e.addedBy || '').toLowerCase() === userEmail
-      );
-    }
-    if (expenseFilterMonth !== 'all') {
-      list = list.filter((e) => e.date?.startsWith(expenseFilterMonth));
-    }
-    return list;
-  }, [expenses, isAdmin, isPastor, userEmail, expenseFilterMonth]);
+    return expenses.filter(exp => {
+      const hasPermission = (isAdmin || isPastor) || (exp.addedBy || '').toLowerCase() === userEmail.toLowerCase();
+      if (!hasPermission) return false;
+
+      if (!exp.date) return true;
+      const expDate = new Date(exp.date);
+      const today = new Date();
+
+      if (expenseFilterPeriod === 'current_month') {
+        return expDate.getMonth() === today.getMonth() && expDate.getFullYear() === today.getFullYear();
+      }
+      if (expenseFilterPeriod === 'week') {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(today.getDate() - 7);
+        return expDate >= oneWeekAgo && expDate <= today;
+      }
+      if (expenseFilterPeriod === 'year') {
+        return expDate.getFullYear() === today.getFullYear();
+      }
+      return true;
+    });
+  }, [expenses, isAdmin, isPastor, userEmail, expenseFilterPeriod]);
 
   const availableTabs = useMemo(() => {
     const tabs = ['dashboard', 'calendar', 'members'];
@@ -799,10 +1089,7 @@ export default function App() {
     if (canViewPayroll) tabs.push('reports');
     tabs.push('staff portal');
     return tabs;
-  }, [canViewAttendance, canViewOfferings, canViewPayroll, isRuchi]);
-
-  const showSumontoWallet = isAdmin || isPastor || isSumonto;
-  const showSurrenderWallet = isAdmin || isPastor || isSurrender;
+  }, [canViewAttendance, canViewOfferings, canViewPayroll, isRuchi, isAdmin]);
 
   const staffWallets = useMemo(() => {
     const getWallet = (name) => {
@@ -895,7 +1182,7 @@ export default function App() {
           );
         }
       },
-      (error) => {
+      () => {
         alert('❌ Please ENABLE LOCATION/GPS permissions on your browser.');
       },
       { enableHighAccuracy: true }
@@ -932,6 +1219,7 @@ export default function App() {
   };
 
   const handlePunchOut = () => {
+    if (new Date().getDay() === 0) { alert("Sundays only require Punch In. No Punch Out needed!"); return; }
     if (!myTodayShift) return;
 
     const startTime = new Date(myTodayShift.punchInTime).getTime();
@@ -1756,44 +2044,35 @@ export default function App() {
   };
 
   const handleDailyFileSelect = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-
-    const fileList = files.map((file) => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          resolve({ file: evt.target.result, name: file.name });
-        };
-        reader.readAsDataURL(file);
-      });
-    });
-
-    Promise.all(fileList).then((results) => {
-      setDailyFileObj(results);
-    });
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      setDailyFileObj({ file: evt.target.result, name: file.name });
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleSaveDailySheet = () => {
-    if (!dailyFileObj || dailyFileObj.length === 0) {
+  const handleSaveDailySheet = async () => {
+    if (!dailyFileObj.file) {
       alert('Please choose a file to upload first!');
       return;
     }
-    setDailySheets((prev) => ({
-      ...prev,
-      [selectedDailyDate]: {
-        file: dailyFileObj,
-        note: dailySheetNote.trim(),
-        expenses: dailyCashDeductionsList,
-      },
-    }));
-    setShowDailySheetModal(false);
-    setDailyFileObj({ file: null, name: '' });
-    setDailySheetNote('');
-    setDailyCashDeductionsList([]);
-    alert(`✅ Daily collection sheet saved for ${selectedDailyDate}!`);
+    try {
+      await addDoc(collection(db, 'daily_sheets'), {
+        date: selectedDailyDate,
+        file: dailyFileObj.file,
+        name: dailyFileObj.name,
+        note: dailyFileObj.note || '',
+        createdAt: serverTimestamp()
+      });
+      setShowDailySheetModal(false);
+      setDailyFileObj({ file: null, name: '', note: '' });
+      alert(`✅ Daily collection sheet saved successfully for ${selectedDailyDate}!`);
+    } catch (err) {
+      alert('Error saving counting sheet: ' + err.message);
+    }
   };
-
   const handleAddAdvance = async (e) => {
     e.preventDefault();
     if (!advanceForm.amount) {
@@ -1848,7 +2127,7 @@ export default function App() {
     }
 
     const isPastDate = expenseForm.date < todayStr;
-    if (isPastDate && !editingExpense && !expenseForm.delayReason.trim()) {
+    if (isPastDate && user?.email !== 'shivkumarjena@gmail.com' && !expenseForm.delayReason.trim()) {
       alert(
         '⚠️ This bill is not from today! You MUST enter a logical reason for the delayed submission before proceeding.'
       );
@@ -1872,10 +2151,7 @@ export default function App() {
         justification: '',
         delayReason: isPastDate ? expenseForm.delayReason.trim() : '',
         paymentSource: expenseForm.paymentSource,
-        status:
-          expenseForm.paymentSource === 'Give Advance to Staff'
-            ? 'Approved'
-            : 'Pending',
+        status: 'Pending',
         rejectionReason: '',
         addedBy: user.email,
         updatedAt: serverTimestamp(),
@@ -1884,21 +2160,13 @@ export default function App() {
       if (editingExpense) {
         await updateDoc(doc(db, 'expenses', editingExpense.id), payload);
         setEditingExpense(null);
-        alert(
-          expenseForm.paymentSource === 'Give Advance to Staff'
-            ? 'Advance given to staff recorded successfully!'
-            : 'Expense resubmitted to Pastor Robby for approval!'
-        );
+        alert('Expense resubmitted to Pastor Robby for approval!');
       } else {
         await addDoc(collection(db, 'expenses'), {
           ...payload,
           createdAt: serverTimestamp(),
         });
-        alert(
-          expenseForm.paymentSource === 'Give Advance to Staff'
-            ? 'Advance given to staff recorded successfully!'
-            : 'Expense submitted successfully to Pastor Robby for review!'
-        );
+        alert('Expense submitted successfully to Pastor Robby for review!');
       }
 
       setExpenseForm({
@@ -2126,7 +2394,6 @@ export default function App() {
         padding: '16px',
       }}
     >
-      {/* BRANDING HEADER - ROYAL PURPLE WITH ENLARGED PROFILE PIC */}
       <div
         style={{
           display: 'flex',
@@ -2229,7 +2496,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* DYNAMIC NAVIGATION TABS - LIGHT THEME */}
       <div
         style={{
           display: 'flex',
@@ -2268,13 +2534,17 @@ export default function App() {
         ))}
       </div>
 
-      {/* COMMON CHURCH CALENDAR TAB */}
       {activeTab === 'calendar' && (
         <div>
-          <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
-            Church Calendar & Events
-          </h2>
-
+<h2 style={{ 
+  color: '#6b21a8', 
+  marginBottom: '24px', 
+  textAlign: 'center', 
+  borderBottom: '2px solid #e2e8f0', 
+  paddingBottom: '8px' 
+}}>
+  Church Calendar & Events
+</h2>
           {(isPastor || isAdmin) && (
             <div
               style={{
@@ -2498,7 +2768,6 @@ export default function App() {
         </div>
       )}
 
-      {/* CHURCH REPORTS & ANALYTICS HUB TAB */}
       {activeTab === 'reports' && canViewPayroll && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
@@ -2854,9 +3123,10 @@ export default function App() {
                   a.date?.startsWith(selectedPayrollMonth)
               );
 
-              const totalDaysInMonth = 26;
+              const staffOffs = STAFF_WEEKLY_OFFS[staffName] || [];
+              const weeklyOffs = staffOffs.length * 4;
+              const totalDaysInMonth = Math.max(1, 30 - weeklyOffs);
               const completedDays = monthShifts.length;
-              const weeklyOffs = 4;
               const approvedLeaves = 0;
               const unpaidLeaves = Math.max(
                 0,
@@ -2981,7 +3251,6 @@ export default function App() {
         </div>
       )}
 
-      {/* SALARY SLIP MODAL */}
       {selectedSalarySlipStaff && (
         <div
           style={{
@@ -3206,203 +3475,8 @@ export default function App() {
                         selectedSalarySlipStaff.profile.accountLast4}
                     </td>
                   </tr>
-                  <tr>
-                    <td
-                      style={{
-                        padding: '6px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#f8fafc',
-                      }}
-                    >
-                      <strong>Payment Date</strong>
-                    </td>
-                    <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
-                      01{' '}
-                      {
-                        MONTH_NAMES[
-                          parseInt(
-                            selectedSalarySlipStaff.selectedPayrollMonth.split(
-                              '-'
-                            )[1],
-                            10
-                          ) % 12
-                        ]
-                      }{' '}
-                      {
-                        selectedSalarySlipStaff.selectedPayrollMonth.split(
-                          '-'
-                        )[0]
-                      }
-                    </td>
-                    <td
-                      style={{
-                        padding: '6px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#f8fafc',
-                      }}
-                    >
-                      <strong>Payment Mode</strong>
-                    </td>
-                    <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
-                      Bank Transfer / UPI
-                    </td>
-                  </tr>
                 </tbody>
               </table>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '10px',
-                  marginBottom: '14px',
-                }}
-              >
-                <table
-                  style={{
-                    width: '100%',
-                    borderCollapse: 'collapse',
-                    fontSize: '11px',
-                    border: '1px solid #cbd5e1',
-                  }}
-                >
-                  <thead>
-                    <tr style={{ backgroundColor: '#3b0764', color: '#fff' }}>
-                      <th
-                        colSpan="2"
-                        style={{ padding: '6px', textAlign: 'center' }}
-                      >
-                        ATTENDANCE SUMMARY
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                        }}
-                      >
-                        Total Working Days
-                      </td>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {selectedSalarySlipStaff.totalDaysInMonth}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                        }}
-                      >
-                        Completed Working Days
-                      </td>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {selectedSalarySlipStaff.completedDays}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                        }}
-                      >
-                        Weekly Offs
-                      </td>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {selectedSalarySlipStaff.weeklyOffs}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                        }}
-                      >
-                        Unpaid Leave
-                      </td>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {selectedSalarySlipStaff.unpaidLeaves}
-                      </td>
-                    </tr>
-                    <tr
-                      style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}
-                    >
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                        }}
-                      >
-                        Effective Working Days
-                      </td>
-                      <td
-                        style={{
-                          padding: '4px 6px',
-                          border: '1px solid #cbd5e1',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {selectedSalarySlipStaff.completedDays}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <div
-                  style={{
-                    border: '1px solid #cbd5e1',
-                    padding: '8px',
-                    fontSize: '11px',
-                    backgroundColor: '#faf5ff',
-                    borderRadius: '4px',
-                  }}
-                >
-                  <strong style={{ color: '#3b0764' }}>
-                    ⏰ LATE ARRIVAL & ATTENDANCE POLICY
-                  </strong>
-                  <p
-                    style={{
-                      margin: '4px 0 0 0',
-                      color: '#475569',
-                      fontSize: '10px',
-                    }}
-                  >
-                    Employees must complete 7 net working hours inside church
-                    premises daily. Up to 2 hours late arrival is permitted on 2
-                    days per month without salary deduction. Beyond this,
-                    attendance policy rules apply.
-                  </p>
-                </div>
-              </div>
 
               <table
                 style={{
@@ -3527,12 +3601,675 @@ export default function App() {
         </div>
       )}
 
-      {/* STAFF PORTAL TAB */}
       {activeTab === 'staff portal' && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
             Staff Portal
           </h2>
+          <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#6b21a8' }}>📜 Church Rules & Regulations</h3>
+            <p style={{ fontSize: '13px', color: '#475569', marginBottom: '12px' }}>Click below to view the official signed letter from Pastor Robby.</p>
+            
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+              {rulesDocUrl ? (
+              <button 
+              onClick={() => window.open(rulesDocUrl, '_blank')}
+              style={{ backgroundColor: '#6b21a8', color: '#fff', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', textDecoration: 'none', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'inline-block' }}
+            >
+              👀 View Rules & Regulations Letter
+            </button>
+              ) : (
+                <span style={{ fontSize: '13px', color: '#dc2626', fontStyle: 'italic' }}>No document uploaded yet.</span>
+              )}
+
+              {isAdmin && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+                  <input type="file" onChange={(e) => setRulesFile(e.target.files[0])} style={{ fontSize: '12px' }} />
+                  <button onClick={handleUploadRulesDoc} style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    📤 Upload / Update Letter
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {isMonday && (isSumonto || isRuchi) && (
+            <div
+              style={{
+                backgroundColor: '#f0fdf4',
+                color: '#166534',
+                padding: '16px',
+                borderRadius: '12px',
+                border: '1px solid #bbf7d0',
+                marginBottom: '20px',
+                textAlign: 'center',
+              }}
+            >
+              <h3 style={{ margin: 0 }}>🎉 Happy Monday Off!</h3>
+              <p style={{ margin: '6px 0 0 0', fontSize: '13px' }}>
+                Enjoy your day of rest. You do not need to punch in today.
+              </p>
+            </div>
+          )}
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '16px',
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                padding: '20px',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 8px 0', color: '#6b21a8' }}>
+                Daily Shift Attendance
+              </h3>
+              <p
+                style={{
+                  fontSize: '12px',
+                  color: '#64748b',
+                  marginBottom: '16px',
+                }}
+              >
+                Work Hours: 10:00 AM - 6:00 PM (Net Target: 7 Hours) <br />
+                Late Passes Used This Month:{' '}
+                <strong style={{ color: '#ea580c' }}>
+                  {latePassesUsedThisMonth} / 2
+                </strong>
+              </p>
+
+              {!myTodayShift ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                  }}
+                >
+                  <button
+                    onClick={() => handlePunchIn(false)}
+                    style={{
+                      backgroundColor: '#16a34a',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 4px rgba(22,163,74,0.2)',
+                    }}
+                  >
+                    📍 Normal Punch In (On Time)
+                  </button>
+
+                  <button
+                    onClick={() => handlePunchIn(true)}
+                    style={{
+                      backgroundColor: '#ea580c',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 4px rgba(234,88,12,0.2)',
+                    }}
+                  >
+                    ⏰ Punch In with 2-Hour Late Pass (Used:{' '}
+                    {latePassesUsedThisMonth}/2)
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div
+                    style={{
+                      backgroundColor: '#f8fafc',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      marginBottom: '14px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: '#16a34a',
+                        fontWeight: 'bold',
+                        fontSize: '13px',
+                      }}
+                    >
+                      ✅ Punched In at:{' '}
+                      {new Date(myTodayShift.punchInTime).toLocaleTimeString(
+                        [],
+                        { hour: '2-digit', minute: '2-digit' }
+                      )}
+                    </div>
+                    {myTodayShift.usedLatePass && (
+                      <div
+                        style={{
+                          color: '#d97706',
+                          fontSize: '11px',
+                          marginTop: '2px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        ⏰ Applied 2-Hour Late Pass
+                      </div>
+                    )}
+
+                    {myTodayShift.punchOutTime && (
+                      <div
+                        style={{
+                          color: '#dc2626',
+                          fontWeight: 'bold',
+                          fontSize: '13px',
+                          marginTop: '6px',
+                        }}
+                      >
+                        🏁 Punched Out at:{' '}
+                        {new Date(myTodayShift.punchOutTime).toLocaleTimeString(
+                          [],
+                          { hour: '2-digit', minute: '2-digit' }
+                        )}
+                      </div>
+                    )}
+
+                    <div
+                      style={{
+                        color: '#475569',
+                        fontSize: '11px',
+                        marginTop: '6px',
+                      }}
+                    >
+                      ☕ Break Minutes Used:{' '}
+                      {myTodayShift.totalBreakMinutes || 0} / 60 mins
+                    </div>
+                  </div>
+
+                  {!myTodayShift.punchOutTime && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '8px',
+                        flexDirection: 'column',
+                      }}
+                    >
+                      {myTodayShift.breaks &&
+                      myTodayShift.breaks.length > 0 &&
+                      !myTodayShift.breaks[myTodayShift.breaks.length - 1]
+                        .end ? (
+                        <button
+                          onClick={handleToggleBreak}
+                          style={{
+                            backgroundColor: '#2563eb',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          ▶️ Resume Work (End Break)
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleToggleBreak}
+                          style={{
+                            backgroundColor: '#f59e0b',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          ☕ Start Break
+                        </button>
+                      )}
+
+                      <button
+                        onClick={handlePunchOut}
+                        style={{
+                          backgroundColor: '#dc2626',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '10px',
+                          borderRadius: '8px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          marginTop: '6px',
+                        }}
+                      >
+                        🏁 Punch Out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                padding: '20px',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 10px 0', color: '#7e22ce' }}>
+                🔒 Change Account Password
+              </h3>
+              <p
+                style={{
+                  fontSize: '12px',
+                  color: '#64748b',
+                  marginBottom: '14px',
+                }}
+              >
+                Update your login password securely.
+              </p>
+
+              <form
+                onSubmit={handleChangePassword}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}
+              >
+                <input
+                  type="password"
+                  placeholder="Current Password *"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      currentPassword: e.target.value,
+                    })
+                  }
+                  required
+                  style={{
+                    backgroundColor: '#f8fafc',
+                    color: '#1e293b',
+                    border: '1px solid #cbd5e1',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                />
+                <input
+                  type="password"
+                  placeholder="New Password (min 6 chars) *"
+                  value={passwordForm.newPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      newPassword: e.target.value,
+                    })
+                  }
+                  required
+                  style={{
+                    backgroundColor: '#f8fafc',
+                    color: '#1e293b',
+                    border: '1px solid #cbd5e1',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                />
+                <input
+                  type="password"
+                  placeholder="Confirm New Password *"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      confirmPassword: e.target.value,
+                    })
+                  }
+                  required
+                  style={{
+                    backgroundColor: '#f8fafc',
+                    color: '#1e293b',
+                    border: '1px solid #cbd5e1',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    backgroundColor: '#7e22ce',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                  }}
+                >
+                  🔐 Update Password
+                </button>
+              </form>
+            </div>
+
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                padding: '20px',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 10px 0', color: '#16a34a' }}>
+                Daily Task Checklist
+              </h3>
+
+              {(isPastor || isAdmin) && (
+                <form
+                  onSubmit={handleCreateTaskTemplate}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    marginBottom: '14px',
+                  }}
+                >
+                  <input
+                    placeholder="New Checklist Item..."
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    required
+                    style={{
+                      backgroundColor: '#f8fafc',
+                      color: '#1e293b',
+                      border: '1px solid #cbd5e1',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <select
+                      value={newTaskAssignee}
+                      onChange={(e) => setNewTaskAssignee(e.target.value)}
+                      style={{
+                        flex: 1,
+                        backgroundColor: '#f8fafc',
+                        color: '#1e293b',
+                        border: '1px solid #cbd5e1',
+                        padding: '6px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                      }}
+                    >
+                      <option value="All Staff">Assign to: All Staff</option>
+                      {Object.keys(staffProfiles).map((sName) => (
+                        <option key={sName} value={sName}>
+                          Assign to: {sName}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={newTaskDays}
+                      onChange={(e) => setNewTaskDays(e.target.value)}
+                      style={{
+                        flex: 1,
+                        backgroundColor: '#f8fafc',
+                        color: '#1e293b',
+                        border: '1px solid #cbd5e1',
+                        padding: '6px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                      }}
+                    >
+                      <option value="1">Deadline: 1 Day</option>
+                      <option value="2">Deadline: 2 Days</option>
+                      <option value="3">Deadline: 3 Days</option>
+                      <option value="5">Deadline: 5 Days</option>
+                      <option value="7">Deadline: 7 Days</option>
+                    </select>
+
+                    <button
+                      type="submit"
+                      style={{
+                        backgroundColor: '#16a34a',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      + Add Task
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              <div
+                style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+              >
+                {visibleTasks.length > 0 ? (
+                  visibleTasks.map((task) => {
+                    const isChecked = (
+                      myTodayShift?.completedTasks || []
+                    ).includes(task.title);
+                    return (
+                      <div
+                        key={task.id}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          padding: '10px',
+                          borderRadius: '8px',
+                        }}
+                      >
+                        <div>
+                          <label
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              fontSize: '13px',
+                              cursor: 'pointer',
+                              color: isChecked ? '#16a34a' : '#1e293b',
+                              fontWeight: isChecked ? 'bold' : 'normal',
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleToggleTask(task.title)}
+                              disabled={!myTodayShift}
+                              style={{ accentColor: '#16a34a' }}
+                            />
+                            <span
+                              style={{
+                                textDecoration: isChecked
+                                  ? 'line-through'
+                                  : 'none',
+                              }}
+                            >
+                              {task.title}
+                            </span>
+                          </label>
+                        </div>
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDeleteTaskTemplate(task.id)}
+                            style={{
+                              backgroundColor: 'transparent',
+                              color: '#dc2626',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: '11px',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            ❌
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div
+                    style={{
+                      color: '#64748b',
+                      fontSize: '12px',
+                      textAlign: 'center',
+                      padding: '10px',
+                    }}
+                  >
+                    No tasks assigned specifically to you today.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'dashboard' && (
+        <div>
+          <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>Dashboard</h2>
+          
+          {/* Today's Special Cards */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '16px',
+              marginBottom: '20px',
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '16px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#6b21a8' }}>
+                🎂 Today's Birthdays ({todayBirthdays.length})
+              </h3>
+              {todayBirthdays.length > 0 ? (
+                todayBirthdays.map((m) => (
+                  <div key={m.id} style={{ fontSize: '13px', color: '#1e293b', marginBottom: '6px' }}>
+                    <strong>{m.name}</strong> ({m.mobile || 'No Mobile'})
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: '12px', color: '#64748b' }}>No birthdays today.</div>
+              )}
+            </div>
+
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '16px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#6b21a8' }}>
+                💍 Today's Marriage Anniversaries ({todayAnniversaries.length})
+              </h3>
+              {todayAnniversaries.length > 0 ? (
+                todayAnniversaries.map((m) => (
+                  <div key={m.id} style={{ fontSize: '13px', color: '#1e293b', marginBottom: '6px' }}>
+                    <strong>{m.name}</strong> ({m.mobile || 'No Mobile'})
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: '12px', color: '#64748b' }}>No anniversaries today.</div>
+              )}
+            </div>
+          </div>
+
+          {/* Current Month's Special Cards */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '16px',
+              marginBottom: '20px',
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '16px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#6b21a8' }}>
+                🎈 This Month's Birthdays ({monthBirthdays.length})
+              </h3>
+              {monthBirthdays.length > 0 ? (
+                <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {monthBirthdays.map((m) => (
+                    <div key={m.id} style={{ fontSize: '12px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px' }}>
+                      <strong>{m.day}th</strong>: {m.name} ({m.mobile || 'No Mobile'})
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: '12px', color: '#64748b' }}>No birthdays this month.</div>
+              )}
+            </div>
+
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '16px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#6b21a8' }}>
+                🎊 This Month's Marriage Anniversaries ({monthAnniversaries.length})
+              </h3>
+              {monthAnniversaries.length > 0 ? (
+                <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {monthAnniversaries.map((m) => (
+                    <div key={m.id} style={{ fontSize: '12px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px' }}>
+                      <strong>{m.day}th</strong>: {m.name} ({m.mobile || 'No Mobile'})
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: '12px', color: '#64748b' }}>No anniversaries this month.</div>
+              )}
+            </div>
+          </div>
 
           {isAdmin && (
             <div
@@ -3796,7 +4533,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* CURRENT STAFF LIST TABLE */}
               <div
                 style={{
                   marginTop: '16px',
@@ -3883,958 +4619,6 @@ export default function App() {
               </div>
             </div>
           )}
-
-          {isMonday && (isSumonto || isRuchi) && (
-            <div
-              style={{
-                backgroundColor: '#f0fdf4',
-                color: '#166534',
-                padding: '16px',
-                borderRadius: '12px',
-                border: '1px solid #bbf7d0',
-                marginBottom: '20px',
-                textAlign: 'center',
-              }}
-            >
-              <h3 style={{ margin: 0 }}>🎉 Happy Monday Off!</h3>
-              <p style={{ margin: '6px 0 0 0', fontSize: '13px' }}>
-                Enjoy your day of rest. You do not need to punch in today.
-              </p>
-            </div>
-          )}
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '16px',
-            }}
-          >
-            {/* ATTENDANCE CARD */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                padding: '20px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}
-            >
-              <h3 style={{ margin: '0 0 8px 0', color: '#6b21a8' }}>
-                Daily Shift Attendance
-              </h3>
-              <p
-                style={{
-                  fontSize: '12px',
-                  color: '#64748b',
-                  marginBottom: '16px',
-                }}
-              >
-                Work Hours: 10:00 AM - 6:00 PM (Net Target: 7 Hours) <br />
-                Late Passes Used This Month:{' '}
-                <strong style={{ color: '#ea580c' }}>
-                  {latePassesUsedThisMonth} / 2
-                </strong>
-              </p>
-
-              {!myTodayShift ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                  }}
-                >
-                  <button
-                    onClick={() => handlePunchIn(false)}
-                    style={{
-                      backgroundColor: '#16a34a',
-                      color: '#fff',
-                      border: 'none',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 4px rgba(22,163,74,0.2)',
-                    }}
-                  >
-                    📍 Normal Punch In (On Time)
-                  </button>
-
-                  <button
-                    onClick={() => handlePunchIn(true)}
-                    style={{
-                      backgroundColor: '#ea580c',
-                      color: '#fff',
-                      border: 'none',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 4px rgba(234,88,12,0.2)',
-                    }}
-                  >
-                    ⏰ Punch In with 2-Hour Late Pass (Used:{' '}
-                    {latePassesUsedThisMonth}/2)
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  <div
-                    style={{
-                      backgroundColor: '#f8fafc',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1px solid #e2e8f0',
-                      marginBottom: '14px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: '#16a34a',
-                        fontWeight: 'bold',
-                        fontSize: '13px',
-                      }}
-                    >
-                      ✅ Punched In at:{' '}
-                      {new Date(myTodayShift.punchInTime).toLocaleTimeString(
-                        [],
-                        { hour: '2-digit', minute: '2-digit' }
-                      )}
-                    </div>
-                    {myTodayShift.usedLatePass && (
-                      <div
-                        style={{
-                          color: '#d97706',
-                          fontSize: '11px',
-                          marginTop: '2px',
-                          fontWeight: 'bold',
-                        }}
-                      >
-                        ⏰ Applied 2-Hour Late Pass
-                      </div>
-                    )}
-
-                    {myTodayShift.punchOutTime && (
-                      <div
-                        style={{
-                          color: '#dc2626',
-                          fontWeight: 'bold',
-                          fontSize: '13px',
-                          marginTop: '6px',
-                        }}
-                      >
-                        🏁 Punched Out at:{' '}
-                        {new Date(myTodayShift.punchOutTime).toLocaleTimeString(
-                          [],
-                          { hour: '2-digit', minute: '2-digit' }
-                        )}
-                      </div>
-                    )}
-
-                    <div
-                      style={{
-                        color: '#475569',
-                        fontSize: '11px',
-                        marginTop: '6px',
-                      }}
-                    >
-                      ☕ Break Minutes Used:{' '}
-                      {myTodayShift.totalBreakMinutes || 0} / 60 mins
-                    </div>
-                  </div>
-
-                  {!myTodayShift.punchOutTime && (
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: '8px',
-                        flexDirection: 'column',
-                      }}
-                    >
-                      {myTodayShift.breaks &&
-                      myTodayShift.breaks.length > 0 &&
-                      !myTodayShift.breaks[myTodayShift.breaks.length - 1]
-                        .end ? (
-                        <button
-                          onClick={handleToggleBreak}
-                          style={{
-                            backgroundColor: '#2563eb',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '10px',
-                            borderRadius: '8px',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          ▶️ Resume Work (End Break)
-                        </button>
-                      ) : (
-                        <button
-                          onClick={handleToggleBreak}
-                          style={{
-                            backgroundColor: '#f59e0b',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '10px',
-                            borderRadius: '8px',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          ☕ Start Break
-                        </button>
-                      )}
-
-                      <button
-                        onClick={handlePunchOut}
-                        style={{
-                          backgroundColor: '#dc2626',
-                          color: '#fff',
-                          border: 'none',
-                          padding: '10px',
-                          borderRadius: '8px',
-                          fontWeight: 'bold',
-                          cursor: 'pointer',
-                          marginTop: '6px',
-                        }}
-                      >
-                        🏁 Punch Out
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* CHANGE PASSWORD CARD */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                padding: '20px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}
-            >
-              <h3 style={{ margin: '0 0 10px 0', color: '#7e22ce' }}>
-                🔒 Change Account Password
-              </h3>
-              <p
-                style={{
-                  fontSize: '12px',
-                  color: '#64748b',
-                  marginBottom: '14px',
-                }}
-              >
-                Update your login password securely.
-              </p>
-
-              <form
-                onSubmit={handleChangePassword}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                }}
-              >
-                <input
-                  type="password"
-                  placeholder="Current Password *"
-                  value={passwordForm.currentPassword}
-                  onChange={(e) =>
-                    setPasswordForm({
-                      ...passwordForm,
-                      currentPassword: e.target.value,
-                    })
-                  }
-                  required
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    color: '#1e293b',
-                    border: '1px solid #cbd5e1',
-                    padding: '10px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                  }}
-                />
-                <input
-                  type="password"
-                  placeholder="New Password (min 6 chars) *"
-                  value={passwordForm.newPassword}
-                  onChange={(e) =>
-                    setPasswordForm({
-                      ...passwordForm,
-                      newPassword: e.target.value,
-                    })
-                  }
-                  required
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    color: '#1e293b',
-                    border: '1px solid #cbd5e1',
-                    padding: '10px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                  }}
-                />
-                <input
-                  type="password"
-                  placeholder="Confirm New Password *"
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) =>
-                    setPasswordForm({
-                      ...passwordForm,
-                      confirmPassword: e.target.value,
-                    })
-                  }
-                  required
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    color: '#1e293b',
-                    border: '1px solid #cbd5e1',
-                    padding: '10px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                  }}
-                />
-                <button
-                  type="submit"
-                  style={{
-                    backgroundColor: '#7e22ce',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '10px',
-                    borderRadius: '8px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                  }}
-                >
-                  🔐 Update Password
-                </button>
-              </form>
-            </div>
-
-            {/* DAILY TASK CHECKLIST */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                padding: '20px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}
-            >
-              <h3 style={{ margin: '0 0 10px 0', color: '#16a34a' }}>
-                Daily Task Checklist
-              </h3>
-
-              {(isPastor || isAdmin) && (
-                <form
-                  onSubmit={handleCreateTaskTemplate}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                    marginBottom: '14px',
-                  }}
-                >
-                  <input
-                    placeholder="New Checklist Item..."
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                    required
-                    style={{
-                      backgroundColor: '#f8fafc',
-                      color: '#1e293b',
-                      border: '1px solid #cbd5e1',
-                      padding: '8px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                    }}
-                  />
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <select
-                      value={newTaskAssignee}
-                      onChange={(e) => setNewTaskAssignee(e.target.value)}
-                      style={{
-                        flex: 1,
-                        backgroundColor: '#f8fafc',
-                        color: '#1e293b',
-                        border: '1px solid #cbd5e1',
-                        padding: '6px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                      }}
-                    >
-                      <option value="All Staff">Assign to: All Staff</option>
-                      {Object.keys(staffProfiles).map((sName) => (
-                        <option key={sName} value={sName}>
-                          Assign to: {sName}
-                        </option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={newTaskDays}
-                      onChange={(e) => setNewTaskDays(e.target.value)}
-                      style={{
-                        flex: 1,
-                        backgroundColor: '#f8fafc',
-                        color: '#1e293b',
-                        border: '1px solid #cbd5e1',
-                        padding: '6px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                      }}
-                    >
-                      <option value="1">Deadline: 1 Day</option>
-                      <option value="2">Deadline: 2 Days</option>
-                      <option value="3">Deadline: 3 Days</option>
-                      <option value="5">Deadline: 5 Days</option>
-                      <option value="7">Deadline: 7 Days</option>
-                    </select>
-
-                    <button
-                      type="submit"
-                      style={{
-                        backgroundColor: '#16a34a',
-                        color: '#fff',
-                        border: 'none',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      + Add Task
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              <div
-                style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
-              >
-                {visibleTasks.length > 0 ? (
-                  visibleTasks.map((task) => {
-                    const isChecked = (
-                      myTodayShift?.completedTasks || []
-                    ).includes(task.title);
-                    return (
-                      <div
-                        key={task.id}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          backgroundColor: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      >
-                        <div>
-                          <label
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              fontSize: '13px',
-                              cursor: 'pointer',
-                              color: isChecked ? '#16a34a' : '#1e293b',
-                              fontWeight: isChecked ? 'bold' : 'normal',
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => handleToggleTask(task.title)}
-                              disabled={!myTodayShift}
-                              style={{ accentColor: '#16a34a' }}
-                            />
-                            <span
-                              style={{
-                                textDecoration: isChecked
-                                  ? 'line-through'
-                                  : 'none',
-                              }}
-                            >
-                              {task.title}
-                            </span>
-                          </label>
-                          <div
-                            style={{
-                              fontSize: '10px',
-                              color: '#64748b',
-                              marginTop: '4px',
-                              marginLeft: '24px',
-                              display: 'flex',
-                              gap: '10px',
-                            }}
-                          >
-                            <span>
-                              📌 Assigned:{' '}
-                              <strong>{task.assignedTo || 'All Staff'}</strong>
-                            </span>
-                            {task.dueDate && (
-                              <span
-                                style={{ color: '#ea580c', fontWeight: 'bold' }}
-                              >
-                                ⏳ Due: {formatShortDate(task.dueDate)} (
-                                {task.daysAllowed || 1} day target)
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {isAdmin && (
-                          <button
-                            onClick={() => handleDeleteTaskTemplate(task.id)}
-                            style={{
-                              backgroundColor: 'transparent',
-                              color: '#dc2626',
-                              border: 'none',
-                              cursor: 'pointer',
-                              fontSize: '11px',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            ❌
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div
-                    style={{
-                      color: '#64748b',
-                      fontSize: '12px',
-                      textAlign: 'center',
-                      padding: '10px',
-                    }}
-                  >
-                    No tasks assigned specifically to you today.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* DAILY WORK REPORT */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                padding: '20px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}
-            >
-              <h3 style={{ margin: '0 0 8px 0', color: '#d97706' }}>
-                Daily Work Report (DWR)
-              </h3>
-
-              {isAdmin || isPastor ? (
-                <div>
-                  <p
-                    style={{
-                      fontSize: '11px',
-                      color: '#64748b',
-                      marginBottom: '12px',
-                    }}
-                  >
-                    📩 Live Submitted DWR Reports for Today ({todayStr}):
-                  </p>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                      maxHeight: '250px',
-                      overflowY: 'auto',
-                    }}
-                  >
-                    {todaySubmittedDWRs.length > 0 ? (
-                      todaySubmittedDWRs.map((shift) => (
-                        <div
-                          key={shift.id}
-                          style={{
-                            backgroundColor: '#f8fafc',
-                            border: '1px solid #cbd5e1',
-                            padding: '10px',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontWeight: 'bold',
-                              color: '#6b21a8',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                            }}
-                          >
-                            <span>👤 {shift.email}</span>
-                            <span
-                              style={{ fontSize: '10px', color: '#16a34a' }}
-                            >
-                              🕒{' '}
-                              {shift.dwrSubmittedAt
-                                ? new Date(
-                                    shift.dwrSubmittedAt
-                                  ).toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })
-                                : 'Submitted'}
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              marginTop: '6px',
-                              color: '#334155',
-                              whiteSpace: 'pre-wrap',
-                            }}
-                          >
-                            📝 {shift.dailyWorkReport}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div
-                        style={{
-                          fontSize: '12px',
-                          color: '#94a3b8',
-                          textAlign: 'center',
-                          padding: '20px',
-                          border: '1px dashed #cbd5e1',
-                          borderRadius: '8px',
-                        }}
-                      >
-                        No staff DWRs submitted yet for today.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <p
-                    style={{
-                      fontSize: '11px',
-                      color: '#64748b',
-                      marginBottom: '10px',
-                    }}
-                  >
-                    Must be submitted before 12 midnight daily.
-                  </p>
-
-                  <textarea
-                    rows="4"
-                    placeholder="List everything you completed today..."
-                    value={dwrText || myTodayShift?.dailyWorkReport || ''}
-                    onChange={(e) => setDwrText(e.target.value)}
-                    style={{
-                      width: '100%',
-                      backgroundColor: '#f8fafc',
-                      color: '#1e293b',
-                      border: '1px solid #cbd5e1',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                    }}
-                  />
-
-                  <button
-                    onClick={handleSaveDWR}
-                    style={{
-                      marginTop: '10px',
-                      backgroundColor: '#ea580c',
-                      color: '#ffffff',
-                      border: 'none',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      width: '100%',
-                      boxShadow: '0 2px 4px rgba(234,88,12,0.2)',
-                    }}
-                  >
-                    📝 Save Work Report
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* FIELD DUTY REQUEST */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                padding: '20px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}
-            >
-              <h3 style={{ margin: '0 0 8px 0', color: '#6b21a8' }}>
-                Official Field Duty Request
-              </h3>
-              <p
-                style={{
-                  fontSize: '11px',
-                  color: '#64748b',
-                  marginBottom: '10px',
-                }}
-              >
-                Leaving church premises for official work?
-              </p>
-
-              <input
-                placeholder="Reason & Destination (e.g. Bank work, Supply purchase)..."
-                value={fieldDutyReason}
-                onChange={(e) => setFieldDutyReason(e.target.value)}
-                style={{
-                  width: '100%',
-                  backgroundColor: '#f8fafc',
-                  color: '#1e293b',
-                  border: '1px solid #cbd5e1',
-                  padding: '10px',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  marginBottom: '10px',
-                }}
-              />
-
-              <button
-                onClick={handleRequestFieldDuty}
-                style={{
-                  backgroundColor: '#7e22ce',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '10px 14px',
-                  borderRadius: '8px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  width: '100%',
-                }}
-              >
-                🚗 Request Field Duty
-              </button>
-
-              {myTodayShift?.fieldDutyStatus &&
-                myTodayShift.fieldDutyStatus !== 'None' && (
-                  <div
-                    style={{
-                      marginTop: '10px',
-                      fontSize: '12px',
-                      color:
-                        myTodayShift.fieldDutyStatus === 'Approved'
-                          ? '#16a34a'
-                          : '#dc2626',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    Field Duty Status: {myTodayShift.fieldDutyStatus}
-                  </div>
-                )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* DASHBOARD TAB */}
-      {activeTab === 'dashboard' && (
-        <div>
-          <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>Dashboard</h2>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '14px',
-              marginBottom: '20px',
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #cbd5e1',
-                borderTop: '4px solid #7e22ce',
-                borderRadius: '12px',
-                padding: '16px',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-              }}
-            >
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: '15px',
-                  color: '#6b21a8',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                🎂 Today's Birthdays ({todayBirthdays.length})
-              </h3>
-              <div style={{ marginTop: '10px', fontSize: '13px' }}>
-                {todayBirthdays.length > 0 ? (
-                  todayBirthdays.map((m) => (
-                    <div
-                      key={m.id}
-                      style={{
-                        color: '#16a34a',
-                        fontWeight: 'bold',
-                        margin: '4px 0',
-                      }}
-                    >
-                      🎉 {m.name} ({m.mobile || 'No Mobile'})
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ color: '#64748b' }}>No birthdays today.</div>
-                )}
-              </div>
-            </div>
-
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #cbd5e1',
-                borderTop: '4px solid #be185d',
-                borderRadius: '12px',
-                padding: '16px',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-              }}
-            >
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: '15px',
-                  color: '#be185d',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                💍 Today's Marriage Anniversaries ({todayAnniversaries.length})
-              </h3>
-              <div style={{ marginTop: '10px', fontSize: '13px' }}>
-                {todayAnniversaries.length > 0 ? (
-                  todayAnniversaries.map((m) => (
-                    <div
-                      key={m.id}
-                      style={{
-                        color: '#be185d',
-                        fontWeight: 'bold',
-                        margin: '4px 0',
-                      }}
-                    >
-                      💑 {m.name} ({m.mobile || 'No Mobile'})
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ color: '#64748b' }}>
-                    No anniversaries today.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              padding: '16px',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-              marginBottom: '20px',
-            }}
-          >
-            <h3
-              style={{
-                margin: '0 0 12px 0',
-                fontSize: '15px',
-                color: '#ea580c',
-              }}
-            >
-              📅 Celebrations This Month ({MONTH_NAMES[currentMonth]})
-            </h3>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                gap: '12px',
-              }}
-            >
-              <div>
-                <strong style={{ fontSize: '12px', color: '#6b21a8' }}>
-                  Upcoming Birthdays:
-                </strong>
-                {monthBirthdays.length > 0 ? (
-                  monthBirthdays.map((m) => (
-                    <div
-                      key={m.id}
-                      style={{
-                        fontSize: '12px',
-                        color: '#334155',
-                        marginTop: '4px',
-                      }}
-                    >
-                      🎂 {m.name} — <strong>{formatShortDate(m.dob)}</strong>
-                    </div>
-                  ))
-                ) : (
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      color: '#94a3b8',
-                      marginTop: '4px',
-                    }}
-                  >
-                    None this month
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <strong style={{ fontSize: '12px', color: '#be185d' }}>
-                  Upcoming Anniversaries:
-                </strong>
-                {monthAnniversaries.length > 0 ? (
-                  monthAnniversaries.map((m) => (
-                    <div
-                      key={m.id}
-                      style={{
-                        fontSize: '12px',
-                        color: '#334155',
-                        marginTop: '4px',
-                      }}
-                    >
-                      💍 {m.name} —{' '}
-                      <strong>{formatShortDate(m.anniversary)}</strong>
-                    </div>
-                  ))
-                ) : (
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      color: '#94a3b8',
-                      marginTop: '4px',
-                    }}
-                  >
-                    None this month
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
 
           <div
             style={{
@@ -4940,8 +4724,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* MEMBERS TAB */}
       {activeTab === 'members' && (
         <div>
           {isAdmin && duplicateNameSet.size > 0 && (
@@ -5137,6 +4919,7 @@ export default function App() {
                   }}
                 />
 
+                {/* Date of Birth Fields (Day, Month, Year) */}
                 <div>
                   <label style={{ fontSize: 11, color: '#64748b' }}>
                     Date of Birth * (Day, Month & Optional Year)
@@ -5186,9 +4969,9 @@ export default function App() {
                       }}
                     >
                       <option value="">Month *</option>
-                      {MONTH_NAMES.map((m, idx) => (
-                        <option key={m} value={String(idx + 1)}>
-                          {m}
+                      {MONTH_NAMES.map((mName, idx) => (
+                        <option key={mName} value={String(idx + 1)}>
+                          {mName}
                         </option>
                       ))}
                     </select>
@@ -5222,9 +5005,10 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Anniversary Fields (Day, Month) */}
                 <div>
                   <label style={{ fontSize: 11, color: '#64748b' }}>
-                    Marriage Anniversary (Optional)
+                    Marriage Anniversary (Day & Month Optional)
                   </label>
                   <div
                     style={{ display: 'flex', gap: '8px', marginTop: '4px' }}
@@ -5232,10 +5016,7 @@ export default function App() {
                     <select
                       value={memberForm.annivDay}
                       onChange={(e) =>
-                        setMemberForm({
-                          ...memberForm,
-                          annivDay: e.target.value,
-                        })
+                        setMemberForm({ ...memberForm, annivDay: e.target.value })
                       }
                       style={{
                         flex: 1,
@@ -5272,9 +5053,9 @@ export default function App() {
                       }}
                     >
                       <option value="">Month</option>
-                      {MONTH_NAMES.map((m, idx) => (
-                        <option key={m} value={String(idx + 1)}>
-                          {m}
+                      {MONTH_NAMES.map((mName, idx) => (
+                        <option key={mName} value={String(idx + 1)}>
+                          {mName}
                         </option>
                       ))}
                     </select>
@@ -5332,114 +5113,6 @@ export default function App() {
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
             }}
           />
-          <div
-            style={{
-              display: 'flex',
-              gap: '10px',
-              marginBottom: '16px',
-              flexWrap: 'wrap',
-            }}
-          >
-            <button
-              onClick={() => setShowOnlyMissingDetails(!showOnlyMissingDetails)}
-              style={{
-                flex: 1,
-                backgroundColor: showOnlyMissingDetails ? '#d97706' : '#fef3c7',
-                color: showOnlyMissingDetails ? '#ffffff' : '#92400e',
-                border: '1px solid #f59e0b',
-                padding: '12px',
-                borderRadius: '10px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                fontSize: '13px',
-              }}
-            >
-              {showOnlyMissingDetails
-                ? 'Showing Missing Info Only ⚠️'
-                : '⚠️ Find Missing Info'}
-            </button>
-            <button
-              onClick={() => setShowInactiveMembers(!showInactiveMembers)}
-              style={{
-                flex: 1,
-                backgroundColor: showInactiveMembers ? '#be185d' : '#fce7f3',
-                color: showInactiveMembers ? '#ffffff' : '#9d174d',
-                border: '1px solid #f43f5e',
-                padding: '12px',
-                borderRadius: '10px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                fontSize: '13px',
-              }}
-            >
-              {showInactiveMembers
-                ? 'Showing Inactive (3 Months) 🚨'
-                : '🚨 Inactive Members (3 Months)'}
-            </button>
-          </div>
-          {isAdmin && filteredMembers.length > 0 && (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                backgroundColor: '#ffffff',
-                padding: '10px 14px',
-                borderRadius: '10px',
-                border: '1px solid #cbd5e1',
-                marginBottom: '16px',
-              }}
-            >
-              <button
-                onClick={handleSelectAll}
-                style={{
-                  backgroundColor: '#f1f5f9',
-                  color: '#6b21a8',
-                  border: '1px solid #cbd5e1',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                }}
-              >
-                {selectedMemberIds.length === filteredMembers.length
-                  ? '☑️ Deselect All'
-                  : '☐ Select All'}
-              </button>
-
-              {selectedMemberIds.length > 0 && (
-                <div
-                  style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
-                >
-                  <span
-                    style={{
-                      fontSize: '13px',
-                      color: '#6b21a8',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {selectedMemberIds.length} Selected
-                  </span>
-                  <button
-                    onClick={handleDeleteSelectedMembers}
-                    style={{
-                      backgroundColor: '#dc2626',
-                      color: '#fff',
-                      border: 'none',
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    🗑️ Delete Selected
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
 
           <div
             style={{
@@ -5467,7 +5140,6 @@ export default function App() {
         </div>
       )}
 
-      {/* SUNDAY ATTENDANCE MODULE */}
       {activeTab === 'attendance' && canViewAttendance && (
         <div>
           <div
@@ -5492,23 +5164,6 @@ export default function App() {
               }}
             />
           </div>
-
-          {attendanceDate !== todayStr && !canEditPastAttendance && (
-            <div
-              style={{
-                backgroundColor: '#fef3c7',
-                color: '#92400e',
-                padding: '12px',
-                borderRadius: '8px',
-                marginBottom: '16px',
-                fontSize: '12px',
-                border: '1px solid #f59e0b',
-              }}
-            >
-              🔒 Viewing past date ({attendanceDate}). Contact Admin Shibu with
-              a reason if changes are needed.
-            </div>
-          )}
 
           <div
             style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
@@ -5556,7 +5211,6 @@ export default function App() {
                       borderRadius: '8px',
                       fontWeight: 'bold',
                       cursor: 'pointer',
-                      transition: 'all 0.2s',
                     }}
                   >
                     {isPresent ? '✅ Present' : '❌ Mark Present'}
@@ -5568,195 +5222,11 @@ export default function App() {
         </div>
       )}
 
-      {/* EXPENSES TAB */}
       {activeTab === 'expenses' && !isRuchi && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
             Expenses Management
           </h2>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-              gap: '12px',
-              marginBottom: '20px',
-            }}
-          >
-            {showSumontoWallet && (
-              <div
-                style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderTop: '4px solid #7e22ce',
-                  padding: '16px',
-                  borderRadius: '12px',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-                }}
-              >
-                <div style={{ fontSize: '12px', color: '#64748b' }}>
-                  💳 Sumonto Christian's Advance Balance
-                </div>
-                <div
-                  style={{
-                    fontSize: '22px',
-                    fontWeight: 'bold',
-                    color: '#6b21a8',
-                    marginTop: '4px',
-                  }}
-                >
-                  ₹{staffWallets.Sumonto.balance}
-                </div>
-                <div
-                  style={{
-                    fontSize: '11px',
-                    color: '#475569',
-                    marginTop: '4px',
-                  }}
-                >
-                  Total Advance: ₹{staffWallets.Sumonto.totalAdv} | Spent: ₹
-                  {staffWallets.Sumonto.totalSpent}
-                </div>
-              </div>
-            )}
-
-            {showSurrenderWallet && (
-              <div
-                style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderTop: '4px solid #16a34a',
-                  padding: '16px',
-                  borderRadius: '12px',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-                }}
-              >
-                <div style={{ fontSize: '12px', color: '#64748b' }}>
-                  💳 Surender Messey's Advance Balance
-                </div>
-                <div
-                  style={{
-                    fontSize: '22px',
-                    fontWeight: 'bold',
-                    color: '#16a34a',
-                    marginTop: '4px',
-                  }}
-                >
-                  ₹{staffWallets.Surrender.balance}
-                </div>
-                <div
-                  style={{
-                    fontSize: '11px',
-                    color: '#475569',
-                    marginTop: '4px',
-                  }}
-                >
-                  Total Advance: ₹{staffWallets.Surrender.totalAdv} | Spent: ₹
-                  {staffWallets.Surrender.totalSpent}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {(isPastor || isAdmin) && (
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                padding: '16px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-                marginBottom: '20px',
-              }}
-            >
-              <h3
-                style={{
-                  margin: '0 0 12px 0',
-                  fontSize: '15px',
-                  color: '#d97706',
-                }}
-              >
-                + Record Advance Cash Given to Staff
-              </h3>
-              <form
-                onSubmit={handleAddAdvance}
-                style={{
-                  display: 'flex',
-                  gap: '10px',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                }}
-              >
-                <select
-                  value={advanceForm.staffName}
-                  onChange={(e) =>
-                    setAdvanceForm({
-                      ...advanceForm,
-                      staffName: e.target.value,
-                    })
-                  }
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    color: '#1e293b',
-                    border: '1px solid #cbd5e1',
-                    padding: '8px',
-                    borderRadius: '6px',
-                  }}
-                >
-                  <option value="Sumonto Christian">Sumonto Christian</option>
-                  <option value="Surender Messey">Surender Messey</option>
-                </select>
-
-                <input
-                  type="number"
-                  placeholder="Advance Amount (₹) *"
-                  value={advanceForm.amount}
-                  onChange={(e) =>
-                    setAdvanceForm({ ...advanceForm, amount: e.target.value })
-                  }
-                  required
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    color: '#1e293b',
-                    border: '1px solid #cbd5e1',
-                    padding: '8px',
-                    borderRadius: '6px',
-                  }}
-                />
-
-                <input
-                  type="date"
-                  value={advanceForm.date}
-                  onChange={(e) =>
-                    setAdvanceForm({ ...advanceForm, date: e.target.value })
-                  }
-                  required
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    color: '#1e293b',
-                    border: '1px solid #cbd5e1',
-                    padding: '8px',
-                    borderRadius: '6px',
-                  }}
-                />
-
-                <button
-                  type="submit"
-                  style={{
-                    backgroundColor: '#ea580c',
-                    color: '#ffffff',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                  }}
-                >
-                  💰 Save Advance
-                </button>
-              </form>
-            </div>
-          )}
 
           {canAddExpense && (
             <div
@@ -5790,6 +5260,21 @@ export default function App() {
                 }}
               >
                 <div>
+                <div style={{ background: '#f1f5f9', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #cbd5e1' }}>
+  <h4 style={{ margin: '0 0 10px 0', color: '#1e293b', fontSize: '15px' }}>Staff Advance Wallet Balance</h4>
+  <div style={{ display: 'flex', gap: '20px' }}>
+  {(user?.email === 'shivkumarjena@gmail.com' || user?.email === 'shibu0611@gmail.com' || user?.email === 'robby@gmail.com' || user?.email === 'robby_7c@yahoo.com' || user?.email === 'xsumonto987@gmail.com') && (
+      <div style={{ background: '#ffffff', padding: '10px 15px', borderRadius: '6px', border: '1px solid #e2e8f0', flex: 1 }}>
+        <strong>Sumonto Christian:</strong> Rs. {expenses.filter(e => e.status === 'Approved' && e.paymentSource === 'Give Advance to Staff' && e.staffMember === 'Sumonto Christian').reduce((sum, e) => sum + Number(e.amount || 0), 0)}
+      </div>
+    )}
+    {(user?.email === 'shivkumarjena@gmail.com' || user?.email === 'shibu0611@gmail.com' || user?.email === 'robby@gmail.com' || user?.email === 'robby_7c@yahoo.com' || user?.email === 'surender@gmail.com') && (
+      <div style={{ background: '#ffffff', padding: '10px 15px', borderRadius: '6px', border: '1px solid #e2e8f0', flex: 1 }}>
+        <strong>Surender Messey:</strong> Rs. {expenses.filter(e => e.status === 'Approved' && e.paymentSource === 'Give Advance to Staff' && e.staffMember === 'Surender Messey').reduce((sum, e) => sum + Number(e.amount || 0), 0)}
+      </div>
+    )}
+  </div>
+</div>
                   <label style={{ fontSize: '11px', color: '#64748b' }}>
                     Payment Method / Source
                   </label>
@@ -5812,7 +5297,7 @@ export default function App() {
                     }}
                   >
                     <option value="Direct UPI by Pastor Robby">
-                      Direct Paid by Pastor Robby
+                      Direct UPI Paid by Pastor Robby (To Shopkeeper)
                     </option>
                     <option value="Deduct from Sumonto Christian Advance">
                       Deduct from Sumonto Christian's Advance Wallet
@@ -5823,9 +5308,7 @@ export default function App() {
                     <option value="Out-of-Pocket (Needs Reimbursement)">
                       Out-of-Pocket (Needs Reimbursement)
                     </option>
-                    <option value="Give Advance to Staff">
-                      Give Advance to Staff
-                    </option>
+                    <option value="Give Advance to Staff">Advance given to Staff</option>
                   </select>
                 </div>
 
@@ -5941,154 +5424,8 @@ export default function App() {
                         marginTop: '4px',
                       }}
                     />
-                    {expenseForm.receiptName && !expenseForm.missingBill && (
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          color: '#16a34a',
-                          marginTop: '4px',
-                          fontWeight: 'bold',
-                        }}
-                      >
-                        📎 Attached: {expenseForm.receiptName}
-                      </div>
-                    )}
                   </div>
                 </div>
-
-                {/* SUBMIT WITHOUT BILL OPTION */}
-                <div
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #cbd5e1',
-                    padding: '12px',
-                    borderRadius: '8px',
-                  }}
-                >
-                  <label
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      fontSize: '13px',
-                      fontWeight: 'bold',
-                      color: '#b45309',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={expenseForm.missingBill}
-                      onChange={(e) =>
-                        setExpenseForm({
-                          ...expenseForm,
-                          missingBill: e.target.checked,
-                        })
-                      }
-                      style={{
-                        width: '16px',
-                        height: '16px',
-                        accentColor: '#d97706',
-                      }}
-                    />
-                    Submit Expense Without Bill / Receipt
-                  </label>
-
-                  {expenseForm.missingBill && (
-                    <div style={{ marginTop: '8px' }}>
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          color: '#92400e',
-                          display: 'block',
-                          marginBottom: '4px',
-                        }}
-                      >
-                        ⚠️ You must provide a clear and proper justification for
-                        why the bill is missing (Required for Pastor Robby's
-                        approval):
-                      </span>
-                      <textarea
-                        rows="2"
-                        placeholder="Enter proper justification for missing bill..."
-                        value={expenseForm.missingBillJustification}
-                        onChange={(e) =>
-                          setExpenseForm({
-                            ...expenseForm,
-                            missingBillJustification: e.target.value,
-                          })
-                        }
-                        required
-                        style={{
-                          width: '100%',
-                          backgroundColor: '#ffffff',
-                          color: '#1e293b',
-                          border: '1px solid #d97706',
-                          padding: '8px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {expenseForm.date < todayStr && (
-                  <div
-                    style={{
-                      backgroundColor: '#fef3c7',
-                      border: '1px solid #f59e0b',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize: '12px',
-                        color: '#92400e',
-                        fontWeight: 'bold',
-                        display: 'block',
-                      }}
-                    >
-                      ⚠️ Delayed Submission Notice! (Selected Bill Date:{' '}
-                      {formatShortDate(expenseForm.date)})
-                    </label>
-                    <span
-                      style={{
-                        fontSize: '11px',
-                        color: '#78350f',
-                        display: 'block',
-                        margin: '4px 0 6px 0',
-                      }}
-                    >
-                      Please provide a logical and sensible explanation for
-                      submitting this bill after the expense date for Pastor
-                      Robby's review and approval:
-                    </span>
-                    <textarea
-                      rows="2"
-                      placeholder="Enter mandatory reason for late bill submission..."
-                      value={expenseForm.delayReason}
-                      onChange={(e) =>
-                        setExpenseForm({
-                          ...expenseForm,
-                          delayReason: e.target.value,
-                        })
-                      }
-                      required
-                      style={{
-                        width: '100%',
-                        backgroundColor: '#ffffff',
-                        color: '#1e293b',
-                        border: '1px solid #d97706',
-                        padding: '8px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                      }}
-                    />
-                  </div>
-                )}
 
                 <button
                   type="submit"
@@ -6100,7 +5437,6 @@ export default function App() {
                     borderRadius: '8px',
                     fontWeight: 'bold',
                     cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(234,88,12,0.2)',
                   }}
                 >
                   {editingExpense
@@ -6110,320 +5446,121 @@ export default function App() {
               </form>
             </div>
           )}
+          <h3
+            style={{
+              color: '#1e293b',
+              borderBottom: '2px solid #e2e8f0',
+              paddingBottom: '10px',
+              marginTop: '20px'
+            }}
+          >
+            Professional Expense Ledger
+          </h3>
 
-<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
-  <h3 style={{ color: '#1e293b', margin: 0 }}>Expense History</h3>
+<div style={{ marginBottom: '15px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Filter View:</label>
+            <select 
+              value={expenseFilterPeriod || 'current_month'} 
+              onChange={(e) => setExpenseFilterPeriod(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#fff', color: '#1e293b' }}
+            >
+              <option value="current_month">📅 Current Month (Default)</option>
+              <option value="all">📂 All Expenses</option>
+              <option value="year">🗓️ This Year</option>
+              <option value="custom">🔍 Custom Date Range</option>
+            </select>
+          </div>
 
-  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-    <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Filter Month:</label>
-    <select
-      value={expenseFilterMonth}
-      onChange={(e) => setExpenseFilterMonth(e.target.value)}
-      style={{ backgroundColor: '#ffffff', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '8px', color: '#1e293b', fontWeight: 'bold' }}
-    >
-      <option value="all">🌐 All History (Show All)</option>
-      <option value={currentMonthStr}>🗓️ Current Month</option>
-      <option value="2026-08">August 2026</option>
-      <option value="2026-07">July 2026</option>
-    </select>
-  </div>
-</div>
-<div style={{ backgroundColor: '#f3e8ff', border: '1px solid #d8b4fe', padding: '12px 16px', borderRadius: '10px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-  <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#6b21a8' }}>
-    📊 Total Expenses for Selected Period:
-  </span>
-  <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#16a34a' }}>
-    ₹{visibleExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0).toLocaleString('en-IN')}
-  </span>
-</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {visibleExpenses.map((e) => (
-              <div
-                key={e.id}
-                style={{
-                  backgroundColor: '#ffffff',
-                  border:
-                    e.status === 'Rejected'
-                      ? '1px solid #fca5a5'
-                      : '1px solid #e2e8f0',
-                  padding: 16,
-                  borderRadius: 10,
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                }}
-              >
+<div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+{visibleExpenses.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #cbd5e1', color: '#64748b' }}>
+                No expense records found.
+              </div>
+            ) : (
+              visibleExpenses.sort((a, b) => b.date.localeCompare(a.date)).map((exp) => (
                 <div
+                  key={exp.id}
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
                   }}
                 >
-                  <div>
-                    <strong style={{ color: '#6b21a8', fontSize: '17px' }}>
-                      ₹{e.amount}
-                    </strong>{' '}
-                    —{' '}
-                    <span style={{ color: '#1e293b', fontWeight: 'bold' }}>
-                      {e.category}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: '8px',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        padding: '4px 10px',
-                        borderRadius: '12px',
-                        fontWeight: 'bold',
-                        backgroundColor:
-                          e.status === 'Approved'
-                            ? '#dcfce7'
-                            : e.status === 'Rejected'
-                            ? '#fee2e2'
-                            : '#fef3c7',
-                        color:
-                          e.status === 'Approved'
-                            ? '#15803d'
-                            : e.status === 'Rejected'
-                            ? '#b91c1c'
-                            : '#b45309',
-                        border:
-                          e.status === 'Approved'
-                            ? '1px solid #86efac'
-                            : e.status === 'Rejected'
-                            ? '1px solid #fca5a5'
-                            : '1px solid #fde047',
-                      }}
-                    >
-                      {e.status}
-                    </span>
-
-                    {isAdmin && (
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          onClick={() => handleEditExpenseClick(e)}
-                          style={{
-                            backgroundColor: '#f0fdf4',
-                            color: '#16a34a',
-                            border: '1px solid #bbf7d0',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            cursor: 'pointer',
-                            fontWeight: 'bold',
-                          }}
-                        >
-                          ✏️ Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteExpense(e.id)}
-                          style={{
-                            backgroundColor: '#fef2f2',
-                            color: '#dc2626',
-                            border: '1px solid #fca5a5',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            cursor: 'pointer',
-                            fontWeight: 'bold',
-                          }}
-                        >
-                          🗑️ Delete
-                        </button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', marginBottom: '4px' }}>
+                        📅 {exp.date} | Added by: {exp.addedBy}
                       </div>
+                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b' }}>
+                        {exp.category}
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#475569', marginTop: '4px' }}>
+                        📝 {exp.detail}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#0284c7', marginTop: '4px', fontWeight: 'bold' }}>
+                        💳 Source: {exp.paymentSource}
+                      </div>
+                      {exp.missingBill ? (
+                        <div style={{ fontSize: '11px', color: '#d97706', marginTop: '4px', fontWeight: 'bold' }}>
+                          ⚠️ No Bill: {exp.missingBillJustification}
+                        </div>
+                      ) : exp.receiptFile ? (
+                        <a href={exp.receiptFile} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px', display: 'inline-block', fontWeight: 'bold' }}>
+                          📎 View Attached Bill
+                        </a>
+                      ) : null}
+                    </div>
+                    
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#dc2626' }}>
+                        ₹{Number(exp.amount).toLocaleString('en-IN')}
+                      </div>
+                      <div
+                        style={{
+                          display: 'inline-block',
+                          marginTop: '6px',
+                          padding: '4px 10px',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          backgroundColor: exp.status === 'Approved' ? '#dcfce7' : exp.status === 'Rejected' ? '#fee2e2' : '#fef9c3',
+                          color: exp.status === 'Approved' ? '#166534' : exp.status === 'Rejected' ? '#991b1b' : '#854d0e',
+                        }}
+                      >
+                        {exp.status === 'Approved' ? '✅ Approved' : exp.status === 'Rejected' ? '❌ Rejected' : '⏳ Pending'}
+                      </div>
+                      {exp.status === 'Rejected' && exp.rejectionReason && (
+                        <div style={{ fontSize: '11px', color: '#dc2626', marginTop: '4px', maxWidth: '200px' }}>
+                          Reason: {exp.rejectionReason}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '12px', flexWrap: 'wrap' }}>
+                    {(isAdmin || exp.addedBy === user.email) && (
+                      <>
+                        <button onClick={() => handleEditExpenseClick(exp)} style={{ backgroundColor: '#f1f5f9', color: '#6b21a8', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>✏️ Edit</button>
+                        <button onClick={() => handleDeleteExpense(exp.id)} style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>🗑️ Delete</button>
+                      </>
+                    )}
+                    
+                    {canApproveExpense && exp.status === 'Pending' && (
+                      <>
+                        <button onClick={() => handleApproveExpense(exp.id)} style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold', marginLeft: 'auto' }}>✅ Approve</button>
+                        <button onClick={() => handleRejectExpense(exp.id)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>❌ Reject</button>
+                      </>
                     )}
                   </div>
                 </div>
-
-                <div
-                  style={{
-                    fontSize: '13px',
-                    color: '#334155',
-                    marginTop: '6px',
-                  }}
-                >
-                  📝 <strong>Detail:</strong> {e.detail || '—'}
-                </div>
-
-                <div
-                  style={{
-                    fontSize: '12px',
-                    color: '#64748b',
-                    marginTop: '4px',
-                  }}
-                >
-                  📅 <strong>Expense Date:</strong> {e.date} | 💳{' '}
-                  <strong>Payment Source:</strong>{' '}
-                  {e.paymentSource || 'Direct UPI'} | 👤{' '}
-                  <strong>Submitted By:</strong> {e.addedBy || '—'}
-                </div>
-
-                {e.missingBill && (
-                  <div
-                    style={{
-                      backgroundColor: '#fff7ed',
-                      border: '1px solid #fdba74',
-                      color: '#9a3412',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      marginTop: '6px',
-                    }}
-                  >
-                    ⚠️ <strong>Submitted Without Bill:</strong>{' '}
-                    {e.missingBillJustification}
-                  </div>
-                )}
-
-                {e.delayReason && (
-                  <div
-                    style={{
-                      backgroundColor: '#fef3c7',
-                      border: '1px solid #f59e0b',
-                      color: '#92400e',
-                      padding: '8px 10px',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      marginTop: '6px',
-                    }}
-                  >
-                    ⏰ <strong>Delayed Submission Reason:</strong>{' '}
-                    {e.delayReason}
-                  </div>
-                )}
-
-                <div
-                  style={{
-                    marginTop: '8px',
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                  }}
-                >
-                  {e.receiptFile ? (
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                      }}
-                    >
-                      <span style={{ color: '#16a34a', fontWeight: 'bold' }}>
-                        🧾 Bill/Receipt Attached:
-                      </span>
-                      <a
-                        href="#"
-                        onClick={(evt) => {
-                          evt.preventDefault();
-                          const win = window.open();
-                          win.document.write(
-                            `<iframe src="${e.receiptFile}" frameborder="0" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`
-                          );
-                        }}
-                        style={{
-                          color: '#7e22ce',
-                          fontWeight: 'bold',
-                          textDecoration: 'underline',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        View / Download Bill
-                      </a>
-                    </div>
-                  ) : (
-                    <div style={{ color: '#d97706', fontWeight: 'bold' }}>
-                      ℹ️ Note: Submitted without physical bill (Justified
-                      above).
-                    </div>
-                  )}
-                </div>
-
-                {e.status === 'Rejected' && e.rejectionReason && (
-                  <div
-                    style={{
-                      backgroundColor: '#fef2f2',
-                      border: '1px solid #fca5a5',
-                      color: '#991b1b',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      marginTop: '8px',
-                    }}
-                  >
-                    <strong>❌ Rejection Reason from Pastor Robby:</strong>{' '}
-                    {e.rejectionReason}
-                  </div>
-                )}
-
-                {canApproveExpense && e.status === 'Pending' && (
-                  <div
-                    style={{ marginTop: '10px', display: 'flex', gap: '8px' }}
-                  >
-                    <button
-                      onClick={() => handleApproveExpense(e.id)}
-                      style={{
-                        backgroundColor: '#16a34a',
-                        color: '#fff',
-                        border: 'none',
-                        padding: '6px 14px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      ✅ Approve
-                    </button>
-                    <button
-                      onClick={() => handleRejectExpense(e.id)}
-                      style={{
-                        backgroundColor: '#dc2626',
-                        color: '#fff',
-                        border: 'none',
-                        padding: '6px 14px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      ❌ Reject with Reason
-                    </button>
-                  </div>
-                )}
-
-                {e.status === 'Rejected' &&
-                  ((e.addedBy || '').toLowerCase() === userEmail ||
-                    isAdmin) && (
-                    <button
-                      onClick={() => handleEditExpenseClick(e)}
-                      style={{
-                        marginTop: '8px',
-                        backgroundColor: '#e2e8f0',
-                        color: '#6b21a8',
-                        border: '1px solid #cbd5e1',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      ✏️ Edit & Resubmit Clarification
-                    </button>
-                  )}
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       )}
 
-      {/* OFFERING & TITHES TAB */}
       {activeTab === 'offerings' && canViewOfferings && (
         <div>
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
@@ -6518,17 +5655,8 @@ export default function App() {
                           {c}
                         </option>
                       ))}
-                      {isAdmin && (
-                        <option
-                          value="ADD_NEW"
-                          style={{ color: '#6b21a8', fontWeight: 'bold' }}
-                        >
-                          ➕ Add Custom Category...
-                        </option>
-                      )}
                     </select>
                   </div>
-
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: '11px', color: '#64748b' }}>
                       Amount (₹) *
@@ -6556,79 +5684,56 @@ export default function App() {
                     />
                   </div>
                 </div>
-
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '11px', color: '#64748b' }}>
-                      Payment Method (Cash or Online)
-                    </label>
-                    <select
-                      value={offeringForm.method}
-                      onChange={(e) =>
-                        setOfferingForm({
-                          ...offeringForm,
-                          method: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: '100%',
-                        backgroundColor: '#f8fafc',
-                        color: '#1e293b',
-                        border: '1px solid #cbd5e1',
-                        padding: '10px',
-                        borderRadius: '8px',
-                        marginTop: '4px',
-                      }}
-                    >
-                      {PAYMENT_METHODS.map((pm) => (
-                        <option key={pm} value={pm}>
-                          {pm}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '11px', color: '#64748b' }}>
-                      Date * (Select any date to edit/record)
-                    </label>
-                    <input
-                      type="date"
-                      value={offeringForm.date}
-                      onChange={(e) =>
-                        setOfferingForm({
-                          ...offeringForm,
-                          date: e.target.value,
-                        })
-                      }
-                      required
-                      style={{
-                        width: '100%',
-                        backgroundColor: '#f8fafc',
-                        color: '#1e293b',
-                        border: '1px solid #cbd5e1',
-                        padding: '10px',
-                        borderRadius: '8px',
-                        marginTop: '4px',
-                      }}
-                    />
-                  </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#64748b' }}>
+                    Offering Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={offeringForm.date || ''}
+                    onChange={(e) =>
+                      setOfferingForm({
+                        ...offeringForm,
+                        date: e.target.value,
+                      })
+                    }
+                    required
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#f8fafc',
+                      color: '#1e293b',
+                      border: '1px solid #cbd5e1',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      marginTop: '4px',
+                    }}
+                  />
                 </div>
-
-                <input
-                  placeholder="Note / Reference Number (Optional)"
-                  value={offeringForm.note}
-                  onChange={(e) =>
-                    setOfferingForm({ ...offeringForm, note: e.target.value })
-                  }
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    color: '#1e293b',
-                    border: '1px solid #cbd5e1',
-                    padding: '10px',
-                    borderRadius: '8px',
-                  }}
-                />
+                <div>
+                  <label style={{ fontSize: '11px', color: '#64748b' }}>
+                    Note (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Add any specific note here..."
+                    value={offeringForm.note || ''}
+                    onChange={(e) =>
+                      setOfferingForm({
+                        ...offeringForm,
+                        note: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#f8fafc',
+                      color: '#1e293b',
+                      border: '1px solid #cbd5e1',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      marginTop: '4px',
+                    }}
+                  />
+                </div>
 
                 <button
                   type="submit"
@@ -6640,7 +5745,6 @@ export default function App() {
                     borderRadius: '8px',
                     fontWeight: 'bold',
                     cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(22,163,74,0.2)',
                   }}
                 >
                   {editingOffering
@@ -6651,54 +5755,7 @@ export default function App() {
             </div>
           )}
 
-          {/* CONFIRM ALL RECORDED & UPLOAD COUNTING SHEET BUTTON */}
-          <div
-            style={{
-              backgroundColor: '#f3e8ff',
-              border: '2px dashed #7e22ce',
-              borderRadius: '12px',
-              padding: '16px 20px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '20px',
-              flexWrap: 'wrap',
-              gap: '12px',
-            }}
-          >
-            <div>
-              <h3 style={{ margin: 0, color: '#6b21a8', fontSize: '15px' }}>
-                📋 Done recording all tithes & offerings for today?
-              </h3>
-              <p
-                style={{
-                  margin: '4px 0 0 0',
-                  fontSize: '12px',
-                  color: '#475569',
-                }}
-              >
-                Click 'Yes, All Recorded' to attach today's physical counting
-                sheet summary document.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowDailySheetModal(true)}
-              style={{
-                backgroundColor: '#7e22ce',
-                color: '#fff',
-                border: 'none',
-                padding: '10px 20px',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(126,34,206,0.3)',
-              }}
-            >
-              ✅ Yes, All Recorded (Upload Sheet)
-            </button>
-          </div>
-
-          {/* DAILY SHEET POPUP MODAL */}
+        
           {showDailySheetModal && (
             <div
               style={{
@@ -6796,7 +5853,6 @@ export default function App() {
                     <input
                       type="file"
                       accept="image/*, application/pdf"
-                      multiple
                       onChange={handleDailyFileSelect}
                       style={{
                         width: '100%',
@@ -6808,158 +5864,51 @@ export default function App() {
                         fontSize: '12px',
                       }}
                     />
-                    {Array.isArray(dailyFileObj) && dailyFileObj.length > 0 && (
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          color: '#16a34a',
-                          fontWeight: 'bold',
-                          marginTop: '4px',
-                        }}
-                      >
-                        📎 Selected ({dailyFileObj.length} files):{' '}
-                        {dailyFileObj.map((f) => f.name).join(', ')}
-                      </div>
-                    )}{' '}
-                    <div style={{ marginTop: '10px' }}>
-                      <label
-                        style={{
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          color: '#475569',
-                          display: 'block',
-                          marginBottom: '4px',
-                        }}
-                      >
-                        Note / Remarks (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Add any remarks for this date's sheet..."
-                        value={dailySheetNote}
-                        onChange={(e) => setDailySheetNote(e.target.value)}
-                        style={{
-                          width: '100%',
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                        }}
-                      />
+                    {dailyFileObj.name && (
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        color: '#16a34a',
+                        fontWeight: 'bold',
+                        marginTop: '4px',
+                      }}
+                    >
+                      📎 Selected: {dailyFileObj.name}
                     </div>
+                  )}
+
+                  <div style={{ marginTop: '12px' }}>
+                    <label
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        color: '#475569',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Note / Justification (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter any clarification or details..."
+                      value={dailyFileObj.note || ''}
+                      onChange={(e) => setDailyFileObj({ ...dailyFileObj, note: e.target.value })}
+                      style={{
+                        width: '100%',
+                        backgroundColor: '#f8fafc',
+                        color: '#1e293b',
+                        border: '1px solid #cbd5e1',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                      }}
+                    />
+                  </div>
+
                   </div>
                 </div>
-                <div
-                  style={{
-                    marginTop: '12px',
-                    padding: '10px',
-                    backgroundColor: '#f8fafc',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                  }}
-                >
-                  <label
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      color: '#dc2626',
-                      display: 'block',
-                      marginBottom: '8px',
-                    }}
-                  >
-                    Cash Deductions / Expenses Taken from Collection (Optional)
-                  </label>
-                  {Array.isArray(dailyCashDeductionsList) &&
-                    dailyCashDeductionsList.map((item, index) => (
-                      <div
-                        key={index}
-                        style={{
-                          display: 'flex',
-                          gap: '6px',
-                          marginBottom: '6px',
-                        }}
-                      >
-                        <input
-                          type="text"
-                          placeholder="Expense detail (e.g., Zoom bill)"
-                          value={item.desc}
-                          onChange={(e) => {
-                            const updated = [...dailyCashDeductionsList];
-                            updated[index].desc = e.target.value;
-                            setDailyCashDeductionsList(updated);
-                          }}
-                          style={{
-                            flex: 2,
-                            padding: '6px',
-                            fontSize: '11px',
-                            border: '1px solid #cbd5e1',
-                            borderRadius: '4px',
-                          }}
-                        />
-                        <input
-                          type="number"
-                          placeholder="Amount (₹)"
-                          value={item.amount}
-                          onChange={(e) => {
-                            const updated = [...dailyCashDeductionsList];
-                            updated[index].amount = e.target.value;
-                            setDailyCashDeductionsList(updated);
-                          }}
-                          style={{
-                            flex: 1,
-                            padding: '6px',
-                            fontSize: '11px',
-                            border: '1px solid #cbd5e1',
-                            borderRadius: '4px',
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = dailyCashDeductionsList.filter(
-                              (_, i) => i !== index
-                            );
-                            setDailyCashDeductionsList(updated);
-                          }}
-                          style={{
-                            backgroundColor: '#dc2626',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '11px',
-                          }}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setDailyCashDeductionsList([
-                        ...dailyCashDeductionsList,
-                        { desc: '', amount: '' },
-                      ])
-                    }
-                    style={{
-                      marginTop: '4px',
-                      backgroundColor: '#7e22ce',
-                      color: '#fff',
-                      border: 'none',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      cursor: 'pointer',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    + Add Expense Item
-                  </button>
-                </div>
+
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button
                     onClick={handleSaveDailySheet}
@@ -6998,7 +5947,18 @@ export default function App() {
               </div>
             </div>
           )}
-
+          
+<div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '16px' }}>
+  <span style={{ marginRight: '10px', fontWeight: '500', fontSize: '14px' }}>Filter Month:</span>
+  <select 
+    value={offeringFilterMonth} 
+    onChange={(e) => setOfferingFilterMonth(e.target.value)}
+    style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px', background: '#fff' }}
+  >
+    <option value="current">📅 Current Month</option>
+    <option value="all">📂 All Months</option>
+  </select>
+</div>
           <h3
             style={{
               color: '#1e293b',
@@ -7008,473 +5968,72 @@ export default function App() {
           >
             Professional Offering Ledger
           </h3>
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #cbd5e1',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-            }}
-          >
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                textAlign: 'left',
-                fontSize: '13px',
-              }}
-            >
-              <thead
-                style={{
-                  backgroundColor: '#f8fafc',
-                  color: '#475569',
-                  borderBottom: '2px solid #cbd5e1',
-                }}
-              >
-                <tr>
-                  <th style={{ padding: '12px 16px' }}>Date</th>
-                  <th style={{ padding: '12px 16px' }}>Giver / Source</th>
-                  <th style={{ padding: '12px 16px' }}>Category</th>
-                  <th style={{ padding: '12px 16px' }}>Method</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right' }}>
-                    Amount
-                  </th>
-                  {isAdmin && (
-                    <th style={{ padding: '12px 16px', textAlign: 'center' }}>
-                      Actions
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {(() => {
-                  const groupedByDate = {};
-                  (offerings || []).forEach((o) => {
-                    const d = o.date || todayStr;
-                    if (!groupedByDate[d]) groupedByDate[d] = [];
-                    groupedByDate[d].push(o);
-                  });
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '16px' }}>
+            {(() => {
+              const filteredOfferings = (offerings || []).filter(o => {
+                if (offeringFilterMonth === 'all') return true;
+                const d = o.date || '';
+                return d.startsWith(currentMonthStr);
+              });
+              const groupedByDate = {};
+              filteredOfferings.forEach(o => {
+                const d = o.date || todayStr;
+                if (!groupedByDate[d]) groupedByDate[d] = [];
+                groupedByDate[d].push(o);
+              });
 
-                  const sortedDates = Object.keys(groupedByDate).sort((a, b) =>
-                    b.localeCompare(a)
-                  );
+              const sortedDates = Object.keys(groupedByDate).sort((a, b) => b.localeCompare(a));
 
-                  return sortedDates.map((dateStr) => {
-                    const dateOfferings = groupedByDate[dateStr];
-                    const dayTithes = dateOfferings
-                      .filter((o) => o.category === 'Tithe')
-                      .reduce((sum, o) => sum + Number(o.amount), 0);
+              if (sortedDates.length === 0) {
+                return (
+                  <div style={{ textAlign: 'center', padding: '30px', backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #cbd5e1', color: '#64748b' }}>
+                    No offering or tithe records found.
+                  </div>
+                );
+              }
 
-                    const dayOfferings = dateOfferings
-                      .filter((o) => o.category !== 'Tithe')
-                      .reduce((sum, o) => sum + Number(o.amount), 0);
+              return sortedDates.map((date) => {
+                const dateItems = groupedByDate[date];
+                const tithes = dateItems.filter((o) => o.category === 'Tithe');
+                const nonTithes = dateItems.filter((o) => o.category !== 'Tithe');
 
-                    const dayExpensesList =
-                      dailySheets[dateStr]?.expenses || [];
-                    const dayTotalExpenses = dayExpensesList.reduce(
-                      (sum, exp) => sum + (Number(exp.amount) || 0),
-                      0
-                    );
+                const totalTithes = tithes.reduce((sum, o) => sum + Number(o.amount || 0), 0);
+                const totalOfferings = nonTithes.reduce((sum, o) => sum + Number(o.amount || 0), 0);
+                const grandTotal = totalTithes + totalOfferings;
 
-                    const dayTotal =
-                      dayTithes + dayOfferings - dayTotalExpenses;
+                const sortedTithes = [...tithes].sort((a, b) => {
+                  const nameA = (a.memberName || '').toLowerCase();
+                  const nameB = (b.memberName || '').toLowerCase();
+                  return nameA.localeCompare(nameB);
+                });
 
-                    return (
-                      <React.Fragment key={dateStr}>
-                        <tr style={{ backgroundColor: '#f3e8ff' }}>
-                          <td
-                            colSpan={isAdmin ? 6 : 5}
-                            style={{
-                              padding: '10px 16px',
-                              fontWeight: 'bold',
-                              color: '#6b21a8',
-                              fontSize: '14px',
-                              borderTop: '2px solid #cbd5e1',
-                            }}
-                          >
-                            <div
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                              }}
-                            >
-                              <span>📅 Collection Date: {dateStr}</span>
-                              <div>
-                                {dailySheets[dateStr] ? (
-                                  <div
-                                    style={{
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      gap: '4px',
-                                    }}
-                                  >
-                                    <div
-                                      style={{
-                                        display: 'flex',
-                                        gap: '8px',
-                                        flexWrap: 'wrap',
-                                        alignItems: 'center',
-                                      }}
-                                    >
-                                      {Array.isArray(
-                                        dailySheets[dateStr].file
-                                      ) ? (
-                                        dailySheets[dateStr].file.map(
-                                          (f, idx) => (
-                                            <a
-                                              key={idx}
-                                              href="#"
-                                              onClick={(e) => {
-                                                e.preventDefault();
-                                                const win = window.open();
-                                                win.document.write(
-                                                  `<iframe src="${
-                                                    f.file || f
-                                                  }" frameborder="0" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`
-                                                );
-                                              }}
-                                              style={{
-                                                fontSize: '12px',
-                                                color: '#16a34a',
-                                                fontWeight: 'bold',
-                                                textDecoration: 'underline',
-                                                backgroundColor: '#dcfce7',
-                                                padding: '4px 8px',
-                                                borderRadius: '6px',
-                                                border: '1px solid #86efac',
-                                                cursor: 'pointer',
-                                              }}
-                                            >
-                                              &gt; View Sheet {idx + 1} (
-                                              {f.name || 'Document'})
-                                            </a>
-                                          )
-                                        )
-                                      ) : (
-                                        <a
-                                          href={dailySheets[dateStr].file}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          style={{
-                                            fontSize: '12px',
-                                            color: '#16a34a',
-                                            fontWeight: 'bold',
-                                            textDecoration: 'underline',
-                                            backgroundColor: '#dcfce7',
-                                            padding: '4px 8px',
-                                            borderRadius: '6px',
-                                            border: '1px solid #86efac',
-                                          }}
-                                        >
-                                          📄 View Sheet (
-                                          {dailySheets[dateStr].name ||
-                                            'Document'}
-                                          )
-                                        </a>
-                                      )}
-                                    </div>
-                                    {dailySheets[dateStr].note && (
-                                      <div
-                                        style={{
-                                          fontSize: '11px',
-                                          color: '#6b21a8',
-                                          fontStyle: 'italic',
-                                          fontWeight: 'bold',
-                                        }}
-                                      >
-                                        📝 Remarks: {dailySheets[dateStr].note}
-                                      </div>
-                                    )}
-                                    {dailySheets[dateStr]?.expenses &&
-                                      dailySheets[dateStr].expenses.length >
-                                        0 && (
-                                        <div
-                                          style={{
-                                            fontSize: '11px',
-                                            color: '#dc2626',
-                                            backgroundColor: '#fef2f2',
-                                            padding: '6px 8px',
-                                            borderRadius: '6px',
-                                            border: '1px solid #fecaca',
-                                            marginTop: '4px',
-                                          }}
-                                        >
-                                          <strong>Expenses Deducted:</strong>
-                                          {dailySheets[dateStr].expenses.map(
-                                            (exp, i) => (
-                                              <div
-                                                key={i}
-                                                style={{
-                                                  display: 'flex',
-                                                  justifyContent:
-                                                    'space-between',
-                                                  marginTop: '2px',
-                                                }}
-                                              >
-                                                <span>
-                                                  • {exp.desc || 'Expense'}
-                                                </span>
-                                                <span>
-                                                  -₹{Number(exp.amount) || 0}
-                                                </span>
-                                              </div>
-                                            )
-                                          )}
-                                        </div>
-                                      )}
-                                  </div>
-                                ) : (
-                                  <span
-                                    style={{
-                                      fontSize: '11px',
-                                      color: '#dc2626',
-                                      fontStyle: 'italic',
-                                      marginRight: '8px',
-                                    }}
-                                  >
-                                    ⚠️ No sheet uploaded
-                                  </span>
-                                )}
-                                {isAdmin && (
-                                  <button
-                                    onClick={() => {
-                                      setSelectedDailyDate(dateStr);
-                                      setShowDailySheetModal(true);
-                                    }}
-                                    style={{
-                                      backgroundColor: '#7e22ce',
-                                      color: '#fff',
-                                      border: 'none',
-                                      padding: '4px 10px',
-                                      borderRadius: '6px',
-                                      fontSize: '11px',
-                                      fontWeight: 'bold',
-                                      cursor: 'pointer',
-                                      marginLeft: '8px',
-                                    }}
-                                  >
-                                    📁{' '}
-                                    {dailySheets[dateStr]
-                                      ? 'Change Sheet'
-                                      : 'Upload Sheet Now'}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                        {dateOfferings.map((o) => {
-                          let displayGiver =
-                            o.memberName || 'Anonymous (Given Anonymously)';
-                          if (displayGiver.includes('Anonymous')) {
-                            displayGiver =
-                              o.category === 'Tithe'
-                                ? 'Anonymous (Tithe)'
-                                : 'Congregation / General';
-                          }
-
-                          return (
-                            <tr
-                              key={o.id}
-                              style={{
-                                borderBottom: '1px solid #e2e8f0',
-                                backgroundColor: '#ffffff',
-                              }}
-                            >
-                              <td
-                                style={{
-                                  padding: '10px 16px',
-                                  color: '#64748b',
-                                }}
-                              >
-                                {o.date}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '10px 16px',
-                                  fontWeight: 'bold',
-                                  color: '#1e293b',
-                                }}
-                              >
-                                {displayGiver}
-                                {o.note && (
-                                  <div
-                                    style={{
-                                      fontSize: '11px',
-                                      color: '#94a3b8',
-                                      fontWeight: 'normal',
-                                    }}
-                                  >
-                                    Note: {o.note}
-                                  </div>
-                                )}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '10px 16px',
-                                  color: '#334155',
-                                }}
-                              >
-                                {o.category}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '10px 16px',
-                                  color: '#64748b',
-                                }}
-                              >
-                                {o.method || 'Cash'}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '10px 16px',
-                                  textAlign: 'right',
-                                  fontWeight: 'bold',
-                                  color: '#16a34a',
-                                  fontSize: '14px',
-                                }}
-                              >
-                                ₹{Number(o.amount).toLocaleString('en-IN')}
-                              </td>
-                              {isAdmin && (
-                                <td
-                                  style={{
-                                    padding: '10px 16px',
-                                    textAlign: 'center',
-                                  }}
-                                >
-                                  <button
-                                    onClick={() => handleEditOfferingClick(o)}
-                                    style={{
-                                      backgroundColor: '#f1f5f9',
-                                      color: '#6b21a8',
-                                      border: '1px solid #cbd5e1',
-                                      padding: '4px 8px',
-                                      borderRadius: '4px',
-                                      fontSize: '11px',
-                                      cursor: 'pointer',
-                                      fontWeight: 'bold',
-                                      marginRight: '6px',
-                                    }}
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteOffering(o.id)}
-                                    style={{
-                                      backgroundColor: '#fef2f2',
-                                      color: '#dc2626',
-                                      border: '1px solid #fca5a5',
-                                      padding: '4px 8px',
-                                      borderRadius: '4px',
-                                      fontSize: '11px',
-                                      cursor: 'pointer',
-                                      fontWeight: 'bold',
-                                    }}
-                                  >
-                                    Delete
-                                  </button>
-                                </td>
-                              )}
-                            </tr>
-                          );
-                        })}
-                        <tr
-                          style={{
-                            backgroundColor: '#faf5ff',
-                            borderBottom: '2px solid #cbd5e1',
-                          }}
-                        >
-                          <td
-                            colSpan={isAdmin ? 4 : 3}
-                            style={{
-                              padding: '8px 16px',
-                              textAlign: 'right',
-                              fontWeight: 'bold',
-                              color: '#475569',
-                              fontSize: '12px',
-                            }}
-                          >
-                            Subtotal for {dateStr} — Tithes: ₹
-                            {dayTithes.toLocaleString('en-IN')} | Offerings: ₹
-                            {dayOfferings.toLocaleString('en-IN')}
-                            {dayTotalExpenses > 0
-                              ? `| Expenses: -₹${dayTotalExpenses.toLocaleString(
-                                  'en-IN'
-                                )}`
-                              : ''}
-                          </td>
-                          <td
-                            colSpan="2"
-                            style={{
-                              padding: '8px 16px',
-                              textAlign: 'right',
-                              fontWeight: 'bold',
-                              color: '#16a34a',
-                              fontSize: '13px',
-                            }}
-                          >
-                            Day Total: ₹{dayTotal.toLocaleString('en-IN')}
-                          </td>
-                        </tr>
-                      </React.Fragment>
-                    );
-                  });
-                })()}
-              </tbody>
-              <tfoot
-                style={{
-                  backgroundColor: '#f1f5f9',
-                  borderTop: '2px solid #cbd5e1',
-                }}
-              >
-                <tr>
-                  <td
-                    colSpan={isAdmin ? 4 : 3}
-                    style={{
-                      padding: '16px',
-                      textAlign: 'right',
-                      fontWeight: 'bold',
-                      color: '#1e293b',
-                      fontSize: '14px',
+                return (
+                  <DateOfferingTableCard
+                    key={date}
+                    date={date}
+                    dateItems={dateItems}
+                    sortedTithes={sortedTithes}
+                    nonTithes={nonTithes}
+                    totalTithes={totalTithes}
+                    totalOfferings={totalOfferings}
+                    grandTotal={grandTotal}
+                    isAdmin={isAdmin}
+                    dailySheets={dailySheets}
+                    todayStr={todayStr}
+                    onEditOffering={handleEditOfferingClick}
+                    onDeleteOffering={handleDeleteOffering}
+                    onUploadSheet={(d) => {
+                      setSelectedDailyDate(d);
+                      setShowDailySheetModal(true);
                     }}
-                  >
-                    <span style={{ marginRight: '16px', color: '#0284c7' }}>
-                      Total Tithes: ₹
-                      {offerings
-                        .filter((o) => o.category === 'Tithe')
-                        .reduce((sum, o) => sum + Number(o.amount), 0)
-                        .toLocaleString('en-IN')}
-                    </span>
-                    <span style={{ marginRight: '16px', color: '#ea580c' }}>
-                      Total Offerings: ₹
-                      {offerings
-                        .filter((o) => o.category !== 'Tithe')
-                        .reduce((sum, o) => sum + Number(o.amount), 0)
-                        .toLocaleString('en-IN')}
-                    </span>
-                    Grand Total:
-                  </td>
-                  <td
-                    colSpan="2"
-                    style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontWeight: 'bold',
-                      color: '#16a34a',
-                      fontSize: '16px',
+                    onQuickAddForDate={(d) => {
+                      setOfferingForm({ ...offeringForm, date: d });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                  >
-                    ₹
-                    {offerings
-                      .reduce((sum, o) => sum + Number(o.amount), 0)
-                      .toLocaleString('en-IN')}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+                  />
+                );
+              });
+            })()}
           </div>
         </div>
       )}
