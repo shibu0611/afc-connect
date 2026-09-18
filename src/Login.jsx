@@ -1,59 +1,71 @@
-// src/Login.jsx
-import React, { useState } from "react";
-import { useAuth } from "./AuthProvider";
+import React, { useState } from 'react';
+import { auth } from './firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function Login() {
-  const { signIn, resetPassword } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [stateMsg, setStateMsg] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
 
-  async function handleSubmit(e) {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setStateMsg("");
-    setLoading(true);
+    setError('');
     try {
-      await signIn(email.trim(), password);
-      setStateMsg("Logged in");
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (err) {
-      setStateMsg("Login failed: " + err.message);
-    } finally {
-      setLoading(false);
+      setError('Failed to sign in. Please check your email and password.');
+      console.error(err);
     }
-  }
-
-  async function handleReset(e) {
-    e.preventDefault();
-    if (!email) return setStateMsg("Enter email to reset password");
-    try {
-      await resetPassword(email.trim());
-      setStateMsg("Password reset email sent");
-    } catch (err) {
-      setStateMsg("Reset failed: " + err.message);
-    }
-  }
+  };
 
   return (
-    <div style={{ maxWidth: 420, margin: "30px auto", padding: 20 }}>
-      <h2 style={{ marginBottom: 10 }}>Sign in</h2>
-      <form onSubmit={handleSubmit}>
-        <label style={{ display: "block", marginBottom: 6 }}>Email</label>
-        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="email" style={{ width: "100%", padding: 8, marginBottom: 12 }} />
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f8fafc' }}>
+      <div style={{ backgroundColor: '#ffffff', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', width: '100%', maxWidth: '400px' }}>
+        <h2 style={{ marginBottom: '20px', color: '#6b21a8' }}>Sign in</h2>
 
-        <label style={{ display: "block", marginBottom: 6 }}>Password</label>
-        <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="password" style={{ width: "100%", padding: 8, marginBottom: 12 }} />
+        {error && <div style={{ marginBottom: '14px', padding: '10px', backgroundColor: '#fef2f2', color: '#dc2626', borderRadius: '6px', fontSize: '12px' }}>{error}</div>}
 
-        <div style={{ display: "flex", gap: 8 }}>
-          <button type="submit" disabled={loading} style={{ padding: "8px 14px" }}>
-            {loading ? "Signing in..." : "Sign in"}
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px' }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>Password</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', paddingRight: '50px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            style={{ width: '100%', backgroundColor: '#7e22ce', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}
+          >
+            Sign in
           </button>
-          <button type="button" onClick={handleReset} style={{ padding: "8px 14px" }}>
-            Reset password
-          </button>
-        </div>
-      </form>
-      <div style={{ marginTop: 12, color: "#b00" }}>{stateMsg}</div>
+        </form>
+      </div>
     </div>
   );
 }

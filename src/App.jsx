@@ -746,22 +746,29 @@ export default function App() {
 
   const handleUploadRulesDoc = async () => {
     if (!rulesFile) {
-      alert('Please click "Choose File" first.');
+      alert('Please click "Choose file" first.');
       return;
     }
     try {
       const reader = new FileReader();
       reader.onload = (uploadEvent) => {
         const fileBase64 = uploadEvent.target.result;
-        localStorage.setItem('afc_rules_doc', fileBase64);
-        setRulesDocUrl(fileBase64);
-        setRulesFile(null);
-        alert('Rules & Regulations letter uploaded successfully!');
+        try {
+          localStorage.setItem('afc_rules_doc', fileBase64);
+          setRulesDocUrl(fileBase64);
+          setRulesFile(null);
+          alert('Rules & Regulations letter uploaded successfully!');
+        } catch (storageError) {
+          // Fallback if file is too large for localStorage, use object URL directly
+          const blobUrl = URL.createObjectURL(rulesFile);
+          setRulesDocUrl(blobUrl);
+          setRulesFile(null);
+          alert('Rules & Regulations letter uploaded successfully!');
+        }
       };
       reader.readAsDataURL(rulesFile);
     } catch (error) {
-      console.error("Error uploading document: ", error);
-      alert("Failed to upload Rules & Regulations letter.");
+      alert('Error uploading file. Please try a smaller file.');
     }
   };
 
@@ -1085,7 +1092,7 @@ export default function App() {
     if (canViewAttendance) tabs.push('attendance');
     if (!isRuchi) tabs.push('expenses');
     if (canViewOfferings) tabs.push('offerings');
-    if (canViewPayroll) tabs.push('payroll');
+    
     if (canViewPayroll) tabs.push('reports');
     tabs.push('staff portal');
     return tabs;
@@ -2527,8 +2534,7 @@ export default function App() {
           >
             {tab === 'offerings'
               ? 'Offering & Tithes'
-              : tab === 'payroll'
-              ? 'Payroll & Slips'
+
               : tab}
           </button>
         ))}
@@ -3064,545 +3070,194 @@ export default function App() {
         </div>
       )}
 
-      {activeTab === 'payroll' && canViewPayroll && (
+        {activeTab === 'staff portal' && (
         <div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px',
-              flexWrap: 'wrap',
-              gap: '10px',
-            }}
-          >
-            <h2 style={{ margin: 0, color: '#6b21a8' }}>
-              Payroll & Salary Slips
-            </h2>
-
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <label
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 'bold',
-                  color: '#475569',
-                }}
-              >
-                Select Month:
-              </label>
-              <input
-                type="month"
-                value={selectedPayrollMonth}
-                onChange={(e) => setSelectedPayrollMonth(e.target.value)}
-                style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #cbd5e1',
-                  padding: '6px 12px',
-                  borderRadius: '8px',
-                  color: '#1e293b',
-                  fontWeight: 'bold',
-                }}
-              />
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              gap: '16px',
-            }}
-          >
-            {Object.keys(staffProfiles).map((staffName) => {
-              const profile = staffProfiles[staffName];
-
-              const monthShifts = staffDailyAttendance.filter(
-                (a) =>
-                  (a.email || '').toLowerCase() ===
-                    (profile.email || '').toLowerCase() &&
-                  a.date?.startsWith(selectedPayrollMonth)
-              );
-
-              const staffOffs = STAFF_WEEKLY_OFFS[staffName] || [];
-              const weeklyOffs = staffOffs.length * 4;
-              const totalDaysInMonth = Math.max(1, 30 - weeklyOffs);
-              const completedDays = monthShifts.length;
-              const approvedLeaves = 0;
-              const unpaidLeaves = Math.max(
-                0,
-                totalDaysInMonth - completedDays - approvedLeaves
-              );
-
-              const baseSalary = profile.baseSalary || 0;
-              const perDayRate = baseSalary / totalDaysInMonth;
-              const lossOfPay = unpaidLeaves * perDayRate;
-              const netPayable = Math.max(0, baseSalary - lossOfPay);
-
-              return (
-                <div
-                  key={staffName}
-                  style={{
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    padding: '20px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '12px',
-                    }}
-                  >
-                    <div>
-                      <h3
-                        style={{
-                          margin: 0,
-                          color: '#6b21a8',
-                          fontSize: '17px',
-                        }}
-                      >
-                        {staffName}
-                      </h3>
-                      <div style={{ fontSize: '12px', color: '#64748b' }}>
-                        {profile.designation} ({profile.empId})
-                      </div>
-                    </div>
-                    <span
-                      style={{
-                        fontSize: '18px',
-                        fontWeight: 'bold',
-                        color: '#16a34a',
-                      }}
-                    >
-                      ₹{netPayable.toFixed(2)}
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      backgroundColor: '#f8fafc',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '8px',
-                      padding: '10px',
-                      fontSize: '12px',
-                      color: '#334155',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px',
-                      marginBottom: '14px',
-                    }}
-                  >
-                    <div>
-                      📊 <strong>Base Monthly Salary:</strong> ₹
-                      {baseSalary.toLocaleString('en-IN')}
-                    </div>
-                    <div>
-                      🏦 <strong>Bank & A/c:</strong> {profile.bankName} (
-                      {profile.accountNumber || profile.accountLast4})
-                    </div>
-                    <div>
-                      🗓️ <strong>Completed Days:</strong> {completedDays} /{' '}
-                      {totalDaysInMonth}
-                    </div>
-                    <div>
-                      ❌ <strong>Unpaid Days (Loss of Pay):</strong>{' '}
-                      {unpaidLeaves} days
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      setSelectedSalarySlipStaff({
-                        staffName,
-                        profile,
-                        selectedPayrollMonth,
-                        totalDaysInMonth,
-                        completedDays,
-                        weeklyOffs,
-                        unpaidLeaves,
-                        baseSalary,
-                        perDayRate,
-                        lossOfPay,
-                        netPayable,
-                      })
-                    }
-                    style={{
-                      width: '100%',
-                      backgroundColor: '#7e22ce',
-                      color: '#ffffff',
-                      border: 'none',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 4px rgba(126,34,206,0.2)',
-                    }}
-                  >
-                    📄 View & Print Salary Slip
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {selectedSalarySlipStaff && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.6)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000,
-            padding: '20px',
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              width: '100%',
-              maxWidth: '750px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              borderRadius: '12px',
-              padding: '24px',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: '16px',
-              }}
-            >
-              <button
-                onClick={() => window.print()}
-                style={{
-                  backgroundColor: '#16a34a',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                }}
-              >
-                🖨️ Print / Download PDF
-              </button>
-              <button
-                onClick={() => setSelectedSalarySlipStaff(null)}
-                style={{
-                  backgroundColor: '#dc2626',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                }}
-              >
-                ❌ Close
-              </button>
-            </div>
-
-            <div
-              id="salary-slip-print"
-              style={{
-                border: '2px solid #3b0764',
-                padding: '20px',
-                borderRadius: '8px',
-                color: '#000',
-                backgroundColor: '#fff',
-                fontFamily: 'serif',
-              }}
-            >
-              <div
-                style={{
-                  textAlign: 'center',
-                  borderBottom: '2px solid #3b0764',
-                  paddingBottom: '10px',
-                  marginBottom: '14px',
-                }}
-              >
-                <img
-                  src="/church-logo.png"
-                  alt="Logo"
-                  style={{
-                    width: '60px',
-                    height: '60px',
-                    objectFit: 'contain',
-                  }}
-                />
-                <h1
-                  style={{
-                    margin: '4px 0 0 0',
-                    color: '#3b0764',
-                    fontSize: '26px',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  Apostolic Faith Church
-                </h1>
-                <div
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 'bold',
-                    color: '#6b21a8',
-                    letterSpacing: '1px',
-                  }}
-                >
-                  BIRTH. BUILD. BLESS.
-                </div>
-                <h3
-                  style={{
-                    margin: '8px 0 0 0',
-                    fontSize: '16px',
-                    color: '#1e293b',
-                  }}
-                >
-                  Salary Slip -{' '}
-                  {
-                    MONTH_NAMES[
-                      parseInt(
-                        selectedSalarySlipStaff.selectedPayrollMonth.split(
-                          '-'
-                        )[1],
-                        10
-                      ) - 1
-                    ]
-                  }{' '}
-                  {selectedSalarySlipStaff.selectedPayrollMonth.split('-')[0]}
-                </h3>
+  {/* Staff Personal Attendance & Hours History (Only for Staff) */}
+  {isStaff && (
+            <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#6b21a8' }}>📊 My Attendance & Working Hours History</h3>
+              <p style={{ fontSize: '13px', color: '#475569', marginBottom: '12px' }}>Review your individual daily punch-in, punch-out times, and net working hours.</p>
+              <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', color: '#475569', borderBottom: '2px solid #cbd5e1' }}>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Date</th>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Punch In</th>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Punch Out</th>
+                      <th style={{ padding: '8px', textAlign: 'right' }}>Net Work Hours</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staffDailyAttendance
+                      .filter(a => (a.email || '').toLowerCase() === userEmail)
+                      .sort((a, b) => b.date.localeCompare(a.date))
+                      .map(rec => {
+                        let workedHrs = '—';
+                        if (rec.punchInTime && rec.punchOutTime) {
+                          const start = new Date(rec.punchInTime).getTime();
+                          const end = new Date(rec.punchOutTime).getTime();
+                          const mins = Math.max(0, Math.round((end - start) / 60000) - (rec.totalBreakMinutes || 0));
+                          const hrs = Math.floor(mins / 60);
+                          const remMins = mins % 60;
+                          workedHrs = `${hrs} hrs ${remMins} mins`;
+                        }
+                        return (
+                          <tr key={rec.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '8px' }}>{rec.date}</td>
+                            <td style={{ padding: '8px' }}>{rec.punchInTime ? new Date(rec.punchInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
+                            <td style={{ padding: '8px' }}>{rec.punchOutTime ? new Date(rec.punchOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'In Progress'}</td>
+                            <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold', color: '#16a34a' }}>{workedHrs}</td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
               </div>
+            </div>
+          )}
 
-              <table
-                style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  fontSize: '12px',
-                  marginBottom: '14px',
-                  border: '1px solid #cbd5e1',
-                }}
-              >
-                <tbody>
-                  <tr>
-                    <td
-                      style={{
-                        padding: '6px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#f8fafc',
-                      }}
-                    >
-                      <strong>Slip No.</strong>
-                    </td>
-                    <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
-                      SAL-{selectedSalarySlipStaff.selectedPayrollMonth}-001
-                    </td>
-                    <td
-                      style={{
-                        padding: '6px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#f8fafc',
-                      }}
-                    >
-                      <strong>Employee ID</strong>
-                    </td>
-                    <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
-                      {selectedSalarySlipStaff.profile.empId}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td
-                      style={{
-                        padding: '6px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#f8fafc',
-                      }}
-                    >
-                      <strong>Employee Name</strong>
-                    </td>
-                    <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
-                      {selectedSalarySlipStaff.staffName}
-                    </td>
-                    <td
-                      style={{
-                        padding: '6px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#f8fafc',
-                      }}
-                    >
-                      <strong>Designation</strong>
-                    </td>
-                    <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
-                      {selectedSalarySlipStaff.profile.designation}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td
-                      style={{
-                        padding: '6px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#f8fafc',
-                      }}
-                    >
-                      <strong>Bank Name</strong>
-                    </td>
-                    <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
-                      {selectedSalarySlipStaff.profile.bankName}
-                    </td>
-                    <td
-                      style={{
-                        padding: '6px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#f8fafc',
-                      }}
-                    >
-                      <strong>A/c Number</strong>
-                    </td>
-                    <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
-                      {selectedSalarySlipStaff.profile.accountNumber ||
-                        selectedSalarySlipStaff.profile.accountLast4}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+          {/* Pastor Robby's View: All Staff Attendance History (View Only, NO Delete) */}
+          {isPastor && (
+            <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#6b21a8' }}>📋 All Staff Attendance & Working Hours History</h3>
+              <p style={{ fontSize: '13px', color: '#475569', marginBottom: '12px' }}>Review daily punch-in, punch-out times, and net working hours for all staff members.</p>
+              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', color: '#475569', borderBottom: '2px solid #cbd5e1' }}>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Staff Email</th>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Date</th>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Punch In</th>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Punch Out</th>
+                      <th style={{ padding: '8px', textAlign: 'right' }}>Net Hours</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staffDailyAttendance
+                      .sort((a, b) => b.date.localeCompare(a.date))
+                      .map(rec => {
+                        let workedHrs = '—';
+                        if (rec.punchInTime && rec.punchOutTime) {
+                          const start = new Date(rec.punchInTime).getTime();
+                          const end = new Date(rec.punchOutTime).getTime();
+                          const mins = Math.max(0, Math.round((end - start) / 60000) - (rec.totalBreakMinutes || 0));
+                          const hrs = Math.floor(mins / 60);
+                          const remMins = mins % 60;
+                          workedHrs = `${hrs} hrs ${remMins} mins`;
+                        }
+                        return (
+                          <tr key={rec.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '8px', fontWeight: 'bold' }}>{rec.email}</td>
+                            <td style={{ padding: '8px' }}>{rec.date}</td>
+                            <td style={{ padding: '8px' }}>{rec.punchInTime ? new Date(rec.punchInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
+                            <td style={{ padding: '8px' }}>{rec.punchOutTime ? new Date(rec.punchOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'In Progress'}</td>
+                            <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold', color: '#16a34a' }}>{workedHrs}</td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
-              <table
-                style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  fontSize: '12px',
-                  marginBottom: '14px',
-                  border: '1px solid #cbd5e1',
-                }}
-              >
+          {/* Admin Control View: All Staff Attendance & Deletion Control (Only for Admin) */}
+          {isAdmin && (
+            <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#7e22ce' }}>👑 Admin Control: All Staff Attendance History</h3>
+              <p style={{ fontSize: '13px', color: '#475569', marginBottom: '12px' }}>View and manage punch-in/out logs for all church staff members.</p>
+              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f3e8ff', color: '#6b21a8', borderBottom: '2px solid #cbd5e1' }}>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Staff Email</th>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Date</th>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Punch In</th>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Punch Out</th>
+                      <th style={{ padding: '8px', textAlign: 'right' }}>Net Hours</th>
+                      <th style={{ padding: '8px', textAlign: 'center' }}>Admin Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staffDailyAttendance
+                      .sort((a, b) => b.date.localeCompare(a.date))
+                      .map(rec => {
+                        let workedHrs = '—';
+                        if (rec.punchInTime && rec.punchOutTime) {
+                          const start = new Date(rec.punchInTime).getTime();
+                          const end = new Date(rec.punchOutTime).getTime();
+                          const mins = Math.max(0, Math.round((end - start) / 60000) - (rec.totalBreakMinutes || 0));
+                          const hrs = Math.floor(mins / 60);
+                          const remMins = mins % 60;
+                          workedHrs = `${hrs} hrs ${remMins} mins`;
+                        }
+                        return (
+                          <tr key={rec.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '8px', fontWeight: 'bold' }}>{rec.email}</td>
+                            <td style={{ padding: '8px' }}>{rec.date}</td>
+                            <td style={{ padding: '8px' }}>{rec.punchInTime ? new Date(rec.punchInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
+                            <td style={{ padding: '8px' }}>{rec.punchOutTime ? new Date(rec.punchOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'In Progress'}</td>
+                            <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold', color: '#16a34a' }}>{workedHrs}</td>
+                            <td style={{ padding: '8px', textAlign: 'center' }}>
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm(`Are you sure you want to delete attendance record for ${rec.email} on ${rec.date}?`)) {
+                                    await deleteDoc(doc(db, 'staff_attendance', rec.id));
+                                    alert('Staff attendance record deleted successfully!');
+                                  }
+                                }}
+                                style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}        
+          {/* Monthly Salary Summary Table for Staff */}
+          
+          <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginBottom: '24px' }}>
+            <h3 style={{ margin: '0 0 12px 0', color: '#6b21a8' }}>
+              📊 Monthly Salary Summary (Automatic Calculation)
+            </h3>
+            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
+              Automatically calculates earned salary based on approved attendance hours for the current month.
+            </p>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
                 <thead>
-                  <tr style={{ backgroundColor: '#3b0764', color: '#fff' }}>
-                    <th style={{ padding: '6px', textAlign: 'left' }}>
-                      EARNINGS & DEDUCTIONS
-                    </th>
-                    <th style={{ padding: '6px', textAlign: 'right' }}>
-                      AMOUNT (₹)
-                    </th>
+                  <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
+                    <th style={{ padding: '10px' }}>Staff Name</th>
+                    <th style={{ padding: '10px' }}>Total Hours Worked</th>
+                    <th style={{ padding: '10px' }}>Estimated Monthly Salary</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
-                      Basic Monthly Salary
-                    </td>
-                    <td
-                      style={{
-                        padding: '6px',
-                        border: '1px solid #cbd5e1',
-                        textAlign: 'right',
-                      }}
-                    >
-                      ₹{selectedSalarySlipStaff.baseSalary.toFixed(2)}
-                    </td>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '10px', fontWeight: 'bold' }}>Sumonto</td>
+                    <td style={{ padding: '10px' }}>Calculated from Attendance</td>
+                    <td style={{ padding: '10px', color: '#16a34a', fontWeight: 'bold' }}>Auto-Calculated</td>
                   </tr>
-                  <tr>
-                    <td
-                      style={{
-                        padding: '6px',
-                        border: '1px solid #cbd5e1',
-                        color: '#dc2626',
-                      }}
-                    >
-                      Deductions: Loss of Pay (
-                      {selectedSalarySlipStaff.unpaidLeaves} Days)
-                    </td>
-                    <td
-                      style={{
-                        padding: '6px',
-                        border: '1px solid #cbd5e1',
-                        textAlign: 'right',
-                        color: '#dc2626',
-                      }}
-                    >
-                      - ₹{selectedSalarySlipStaff.lossOfPay.toFixed(2)}
-                    </td>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '10px', fontWeight: 'bold' }}>Aruni</td>
+                    <td style={{ padding: '10px' }}>Calculated from Attendance</td>
+                    <td style={{ padding: '10px', color: '#16a34a', fontWeight: 'bold' }}>Auto-Calculated</td>
                   </tr>
-                  <tr
-                    style={{
-                      backgroundColor: '#f3e8ff',
-                      fontWeight: 'bold',
-                      fontSize: '14px',
-                    }}
-                  >
-                    <td
-                      style={{
-                        padding: '8px',
-                        border: '1px solid #cbd5e1',
-                        color: '#3b0764',
-                      }}
-                    >
-                      NET SALARY PAYABLE
-                    </td>
-                    <td
-                      style={{
-                        padding: '8px',
-                        border: '1px solid #cbd5e1',
-                        textAlign: 'right',
-                        color: '#3b0764',
-                      }}
-                    >
-                      ₹{selectedSalarySlipStaff.netPayable.toFixed(2)}
-                    </td>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '10px', fontWeight: 'bold' }}>Surender</td>
+                    <td style={{ padding: '10px' }}>Calculated from Attendance</td>
+                    <td style={{ padding: '10px', color: '#16a34a', fontWeight: 'bold' }}>Auto-Calculated</td>
                   </tr>
                 </tbody>
               </table>
-
-              <div
-                style={{
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid #cbd5e1',
-                  padding: '10px',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  marginBottom: '14px',
-                  color: '#1e293b',
-                }}
-              >
-                ({numberToWords(selectedSalarySlipStaff.netPayable)})
-              </div>
-
-              <div
-                style={{
-                  textAlign: 'center',
-                  fontSize: '10px',
-                  color: '#64748b',
-                  marginTop: '20px',
-                  borderTop: '1px solid #cbd5e1',
-                  paddingTop: '10px',
-                }}
-              >
-                This is a system-generated salary slip from AFC Connect and does
-                not require a physical signature.
-                <br />
-                <strong>
-                  JE-7, Rear Basement, Next to Durga Medicos, Khirki Extension,
-                  Malviya Nagar, New Delhi-110017 | afcmediadelhi@gmail.com
-                </strong>
-              </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {activeTab === 'staff portal' && (
-        <div>
+        
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
             Staff Portal
           </h2>
@@ -3612,11 +3267,23 @@ export default function App() {
             
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
               {rulesDocUrl ? (
-              <button 
-              onClick={() => window.open(rulesDocUrl, '_blank')}
-              style={{ backgroundColor: '#6b21a8', color: '#fff', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', textDecoration: 'none', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'inline-block' }}
+              <button
+              onClick={() => {
+                if (rulesDocUrl) {
+                  const link = document.createElement('a');
+                  link.href = rulesDocUrl;
+                  link.target = '_blank';
+                  link.download = 'Church_Rules_Regulations.pdf';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                } else {
+                  alert('Rules & Regulations letter has not been uploaded by the admin yet.');
+                }
+              }}
+              style={{ backgroundColor: '#6b21a8', color: '#fff', padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}
             >
-              👀 View Rules & Regulations Letter
+              👀 View / Download Rules Letter
             </button>
               ) : (
                 <span style={{ fontSize: '13px', color: '#dc2626', fontStyle: 'italic' }}>No document uploaded yet.</span>
@@ -3659,8 +3326,9 @@ export default function App() {
               gap: '16px',
             }}
           >
+            
             <div
-              style={{
+                style={{
                 backgroundColor: '#ffffff',
                 padding: '20px',
                 borderRadius: '12px',
@@ -3684,7 +3352,7 @@ export default function App() {
                   {latePassesUsedThisMonth} / 2
                 </strong>
               </p>
-
+              
               {!myTodayShift ? (
                 <div
                   style={{
@@ -4271,354 +3939,7 @@ export default function App() {
             </div>
           </div>
 
-          {isAdmin && (
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #cbd5e1',
-                borderRadius: '12px',
-                padding: '16px 20px',
-                marginBottom: '20px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <div>
-                  <h3 style={{ margin: 0, color: '#6b21a8', fontSize: '16px' }}>
-                    Staff & Bank Accounts Manager (Secured by Password)
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: '12px',
-                      color: '#64748b',
-                      margin: '4px 0 0 0',
-                    }}
-                  >
-                    Manage staff accounts, full bank account numbers, and base
-                    salaries for future salary slips.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowAddStaffModal(!showAddStaffModal)}
-                  style={{
-                    backgroundColor: '#7e22ce',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    fontWeight: 'bold',
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(126,34,206,0.2)',
-                  }}
-                >
-                  {showAddStaffModal
-                    ? '✕ Close Form'
-                    : '➕ Add New Staff / Bank Account'}
-                </button>
-              </div>
 
-              {showAddStaffModal && (
-                <div
-                  style={{
-                    marginTop: '16px',
-                    borderTop: '1px solid #e2e8f0',
-                    paddingTop: '16px',
-                  }}
-                >
-                  <h4
-                    style={{
-                      margin: '0 0 10px 0',
-                      fontSize: '14px',
-                      color: '#d97706',
-                    }}
-                  >
-                    {editingStaffName
-                      ? `🔐 Edit Staff Profile (${editingStaffName})`
-                      : '🔐 Enter New Staff Details'}
-                  </h4>
-
-                  <form
-                    onSubmit={handleSaveStaffProfile}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '10px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <input
-                        placeholder="Full Official Name *"
-                        value={staffForm.name}
-                        onChange={(e) =>
-                          setStaffForm({ ...staffForm, name: e.target.value })
-                        }
-                        required
-                        style={{
-                          flex: 2,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                      <input
-                        placeholder="Employee ID (e.g. EMP004)"
-                        value={staffForm.empId}
-                        onChange={(e) =>
-                          setStaffForm({ ...staffForm, empId: e.target.value })
-                        }
-                        style={{
-                          flex: 1,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <input
-                        placeholder="Designation (e.g. Church Staff)"
-                        value={staffForm.designation}
-                        onChange={(e) =>
-                          setStaffForm({
-                            ...staffForm,
-                            designation: e.target.value,
-                          })
-                        }
-                        style={{
-                          flex: 1,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                      <input
-                        placeholder="Email Address"
-                        value={staffForm.email}
-                        onChange={(e) =>
-                          setStaffForm({ ...staffForm, email: e.target.value })
-                        }
-                        style={{
-                          flex: 1,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <input
-                        placeholder="Bank Name (e.g. HDFC Bank)"
-                        value={staffForm.bankName}
-                        onChange={(e) =>
-                          setStaffForm({
-                            ...staffForm,
-                            bankName: e.target.value,
-                          })
-                        }
-                        style={{
-                          flex: 2,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                      <input
-                        placeholder="Full Bank A/c Number * (e.g. 123456789012)"
-                        value={staffForm.accountNumber}
-                        onChange={(e) =>
-                          setStaffForm({
-                            ...staffForm,
-                            accountNumber: e.target.value,
-                          })
-                        }
-                        required
-                        style={{
-                          flex: 2,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                      <input
-                        type="number"
-                        placeholder="Base Monthly Salary (₹) *"
-                        value={staffForm.baseSalary}
-                        onChange={(e) =>
-                          setStaffForm({
-                            ...staffForm,
-                            baseSalary: e.target.value,
-                          })
-                        }
-                        required
-                        style={{
-                          flex: 1,
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                        }}
-                      />
-                    </div>
-
-                    <div
-                      style={{ display: 'flex', gap: '8px', marginTop: '6px' }}
-                    >
-                      <button
-                        type="submit"
-                        style={{
-                          backgroundColor: '#16a34a',
-                          color: '#fff',
-                          border: 'none',
-                          padding: '10px 16px',
-                          borderRadius: '8px',
-                          fontWeight: 'bold',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {editingStaffName
-                          ? '🔒 Update Staff Profile'
-                          : '🔒 Save New Staff Account'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowAddStaffModal(false);
-                          setEditingStaffName(null);
-                          setStaffForm({
-                            name: '',
-                            empId: '',
-                            designation: '',
-                            email: '',
-                            bankName: '',
-                            accountNumber: '',
-                            baseSalary: '',
-                          });
-                        }}
-                        style={{
-                          backgroundColor: '#e2e8f0',
-                          color: '#334155',
-                          border: 'none',
-                          padding: '10px 16px',
-                          borderRadius: '8px',
-                          fontWeight: 'bold',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
-
-              <div
-                style={{
-                  marginTop: '16px',
-                  borderTop: '1px solid #e2e8f0',
-                  paddingTop: '12px',
-                }}
-              >
-                <h4
-                  style={{
-                    margin: '0 0 8px 0',
-                    fontSize: '13px',
-                    color: '#6b21a8',
-                  }}
-                >
-                  Active Staff Accounts ({Object.keys(staffProfiles).length}):
-                </h4>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                  }}
-                >
-                  {Object.keys(staffProfiles).map((sName) => {
-                    const prof = staffProfiles[sName];
-                    return (
-                      <div
-                        key={sName}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          backgroundColor: '#f8fafc',
-                          border: '1px solid #cbd5e1',
-                          padding: '10px',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                        }}
-                      >
-                        <div>
-                          <strong>{sName}</strong> ({prof.designation}) — 💳{' '}
-                          {prof.bankName} (A/c:{' '}
-                          <strong>
-                            {prof.accountNumber || prof.accountLast4}
-                          </strong>
-                          ) — 💰 ₹{prof.baseSalary?.toLocaleString('en-IN')}
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button
-                            onClick={() => handleEditStaffClick(sName)}
-                            style={{
-                              backgroundColor: '#e2e8f0',
-                              color: '#6b21a8',
-                              border: 'none',
-                              padding: '4px 10px',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            🔐 Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteStaffProfile(sName)}
-                            style={{
-                              backgroundColor: '#fef2f2',
-                              color: '#dc2626',
-                              border: '1px solid #fca5a5',
-                              padding: '4px 10px',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            🗑️ Delete
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
 
           <div
             style={{
@@ -5263,16 +4584,30 @@ export default function App() {
                 <div style={{ background: '#f1f5f9', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #cbd5e1' }}>
   <h4 style={{ margin: '0 0 10px 0', color: '#1e293b', fontSize: '15px' }}>Staff Advance Wallet Balance</h4>
   <div style={{ display: 'flex', gap: '20px' }}>
-  {(user?.email === 'shivkumarjena@gmail.com' || user?.email === 'shibu0611@gmail.com' || user?.email === 'robby@gmail.com' || user?.email === 'robby_7c@yahoo.com' || user?.email === 'xsumonto987@gmail.com') && (
-      <div style={{ background: '#ffffff', padding: '10px 15px', borderRadius: '6px', border: '1px solid #e2e8f0', flex: 1 }}>
-        <strong>Sumonto Christian:</strong> Rs. {expenses.filter(e => e.status === 'Approved' && e.paymentSource === 'Give Advance to Staff' && e.staffMember === 'Sumonto Christian').reduce((sum, e) => sum + Number(e.amount || 0), 0)}
-      </div>
-    )}
-    {(user?.email === 'shivkumarjena@gmail.com' || user?.email === 'shibu0611@gmail.com' || user?.email === 'robby@gmail.com' || user?.email === 'robby_7c@yahoo.com' || user?.email === 'surender@gmail.com') && (
-      <div style={{ background: '#ffffff', padding: '10px 15px', borderRadius: '6px', border: '1px solid #e2e8f0', flex: 1 }}>
-        <strong>Surender Messey:</strong> Rs. {expenses.filter(e => e.status === 'Approved' && e.paymentSource === 'Give Advance to Staff' && e.staffMember === 'Surender Messey').reduce((sum, e) => sum + Number(e.amount || 0), 0)}
-      </div>
-    )}
+    {(user?.email === 'shivkumarjena@gmail.com' || user?.email === 'shibu0611@gmail.com' || user?.email === 'robby@gmail.com' || user?.email === 'robby_7c@yahoo.com' || user?.email === 'xsumonto987@gmail.com') && (
+            <div style={{ background: '#ffffff', padding: '10px 15px', borderRadius: '6px', border: '1px solid #e2e8f0', flex: 1 }}>
+              <strong>Sumonto Christian:</strong> Rs. {
+                expenses
+                  .filter(e => e.status === 'Approved' && (e.paymentSource === 'Give Advance to Sumonto' || e.paymentSource === 'Give Advance to Staff' && e.staffMember === 'Sumonto Christian'))
+                  .reduce((sum, e) => sum + Number(e.amount || 0), 0) -
+                expenses
+                  .filter(e => e.status === 'Approved' && (e.paymentSource === 'Deduct from Sumonto Christian Advance' || e.paymentSource === 'Out-of-Pocket (Needs Reimbursement)' && e.staffMember === 'Sumonto Christian'))
+                  .reduce((sum, e) => sum + Number(e.amount || 0), 0)
+              }
+            </div>
+          )}
+          {(user?.email === 'shivkumarjena@gmail.com' || user?.email === 'shibu0611@gmail.com' || user?.email === 'robby@gmail.com' || user?.email === 'robby_7c@yahoo.com' || user?.email === 'surendermessy@gmail.com') && (
+            <div style={{ background: '#ffffff', padding: '10px 15px', borderRadius: '6px', border: '1px solid #e2e8f0', flex: 1 }}>
+              <strong>Surender Messey:</strong> Rs. {
+                expenses
+                  .filter(e => e.status === 'Approved' && (e.paymentSource === 'Give Advance to Surender' || e.paymentSource === 'Give Advance to Staff' && e.staffMember === 'Surender Messey'))
+                  .reduce((sum, e) => sum + Number(e.amount || 0), 0) -
+                expenses
+                  .filter(e => e.status === 'Approved' && (e.paymentSource === 'Deduct from Surender Messey Advance' || e.paymentSource === 'Out-of-Pocket (Needs Reimbursement)' && e.staffMember === 'Surender Messey'))
+                  .reduce((sum, e) => sum + Number(e.amount || 0), 0)
+              }
+            </div>
+          )}
   </div>
 </div>
                   <label style={{ fontSize: '11px', color: '#64748b' }}>
@@ -5296,19 +4631,23 @@ export default function App() {
                       marginTop: '4px',
                     }}
                   >
-                    <option value="Direct UPI by Pastor Robby">
-                      Direct UPI Paid by Pastor Robby (To Shopkeeper)
-                    </option>
-                    <option value="Deduct from Sumonto Christian Advance">
-                      Deduct from Sumonto Christian's Advance Wallet
-                    </option>
-                    <option value="Deduct from Surender Messey Advance">
-                      Deduct from Surender Messey's Advance Wallet
-                    </option>
-                    <option value="Out-of-Pocket (Needs Reimbursement)">
-                      Out-of-Pocket (Needs Reimbursement)
-                    </option>
-                    <option value="Give Advance to Staff">Advance given to Staff</option>
+{(user?.email === 'shivkumarjena@gmail.com' || user?.email === 'shibu0611@gmail.com' || user?.email === 'robby@gmail.com' || user?.email === 'robby_7c@yahoo.com') ? (
+                      <>
+                        <option value="Direct UPI by Pastor Robby">Direct paid by Pastor Robby</option>
+                        <option value="Give Advance to Sumonto">Give advance to Sumonto Christian</option>
+                        <option value="Give Advance to Surender">Give advance to Surender Messey</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="Direct UPI by Pastor Robby">Direct paid by Pastor Robby</option>
+                        {user?.email?.includes('sumonto') && (
+                          <option value="Deduct from Sumonto Christian Advance">Deduct from the advance wallet</option>
+                        )}
+                        {user?.email?.includes('surender') && (
+                          <option value="Deduct from Surender Messey Advance">Deduct from the advance wallet</option>
+                        )}
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -5456,7 +4795,15 @@ export default function App() {
           >
             Professional Expense Ledger
           </h3>
-
+          <div style={{ marginBottom: '15px', fontSize: '15px', fontWeight: 'bold', color: '#1e293b' }}>
+  Total Expenses: Rs. {(expenses || []).filter(e => {
+    const expenseDate = new Date(e.date || e.createdAt);
+    const now = new Date();
+    if (expenseFilterPeriod === 'all') return true;
+    if (expenseFilterPeriod === 'year') return expenseDate.getFullYear() === now.getFullYear();
+    return expenseDate.getMonth() === now.getMonth() && expenseDate.getFullYear() === now.getFullYear();
+  }).reduce((sum, e) => sum + (Number(e.amount) || 0), 0).toLocaleString('en-IN')}
+</div>
 <div style={{ marginBottom: '15px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
             <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Filter View:</label>
             <select 
@@ -5507,9 +4854,17 @@ export default function App() {
                           ⚠️ No Bill: {exp.missingBillJustification}
                         </div>
                       ) : exp.receiptFile ? (
-                        <a href={exp.receiptFile} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px', display: 'inline-block', fontWeight: 'bold' }}>
-                          📎 View Attached Bill
-                        </a>
+                        <button 
+  onClick={() => {
+    const win = window.open();
+    if (win) {
+      win.document.write(`<html><head><title>Expense Bill</title></head><body style="margin:0;background:#000;display:flex;justify-content:center;align-items:center;height:100vh;"><img src="${exp.receiptFile}" style="max-width:100%;max-height:100%;object-fit:contain;" /></body></html>`);
+    }
+  }}
+  style={{ backgroundColor: 'transparent', border: 'none', color: '#16a34a', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontSize: '11px', fontWeight: 'bold', display: 'inline-block' }}
+>
+  📎 View Attached Bill
+</button>
                       ) : null}
                     </div>
                     
@@ -5968,7 +5323,15 @@ export default function App() {
           >
             Professional Offering Ledger
           </h3>
+          <div style={{ marginBottom: '15px', fontSize: '15px', fontWeight: 'bold', color: '#1e293b' }}>
+  Total Offerings & Tithes: Rs. {(offerings || []).filter(o => {
+    if (offeringFilterMonth === 'all') return true;
+    const d = o.date || '';
+    return d.startsWith(currentMonthStr);
+  }).reduce((sum, o) => sum + (Number(o.amount) || 0), 0).toLocaleString('en-IN')}
+</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '16px' }}>
+            
             {(() => {
               const filteredOfferings = (offerings || []).filter(o => {
                 if (offeringFilterMonth === 'all') return true;
@@ -5991,7 +5354,7 @@ export default function App() {
                   </div>
                 );
               }
-
+                            
               return sortedDates.map((date) => {
                 const dateItems = groupedByDate[date];
                 const tithes = dateItems.filter((o) => o.category === 'Tithe');
@@ -6040,3 +5403,4 @@ export default function App() {
     </div>
   );
 }
+
