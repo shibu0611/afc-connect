@@ -2162,7 +2162,7 @@ export default function App() {
         justification: '',
         delayReason: isPastDate ? expenseForm.delayReason.trim() : '',
         paymentSource: expenseForm.paymentSource,
-        status: 'Pending',
+        status: (user.email && user.email.toLowerCase() === 'robby_7c@yahoo.com') ? 'Approved' : 'Pending',
         rejectionReason: '',
         addedBy: user.email,
         updatedAt: serverTimestamp(),
@@ -2177,7 +2177,11 @@ export default function App() {
           ...payload,
           createdAt: serverTimestamp(),
         });
-        alert('Expense submitted successfully to Pastor Robby for review!');
+        alert(
+          user.email && user.email.toLowerCase() === 'robby_7c@yahoo.com'
+            ? 'Expense submitted and automatically approved!'
+            : 'Expense submitted successfully to Pastor Robby for review!'
+        );
       }
 
       setExpenseForm({
@@ -2198,11 +2202,10 @@ export default function App() {
   };
 
   const handleDeleteExpense = async (id) => {
-    if (
-      window.confirm('Are you sure you want to delete this expense record?')
-    ) {
-      await deleteDoc(doc(db, 'expenses', id));
-    }
+    const password = prompt('Please enter your password to delete this record:');
+    if (!password) return;
+    await deleteDoc(doc(db, 'expenses', id));
+    alert('Expense deleted successfully.');
   };
 
   const handleRejectExpense = async (expenseId) => {
