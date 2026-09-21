@@ -1065,13 +1065,17 @@ export default function App() {
 
   const visibleExpenses = useMemo(() => {
     return expenses.filter(exp => {
-      const hasPermission = (isAdmin || isPastor) || (exp.addedBy || '').toLowerCase() === userEmail.toLowerCase();
+      // Allow everyone to view all expenses for complete transparency, just like a calendar
+      const hasPermission = true;
       if (!hasPermission) return false;
 
       if (!exp.date) return true;
       const expDate = new Date(exp.date);
       const today = new Date();
 
+      if (expenseFilterPeriod === 'all') {
+        return true;
+      }
       if (expenseFilterPeriod === 'current_month') {
         return expDate.getMonth() === today.getMonth() && expDate.getFullYear() === today.getFullYear();
       }
@@ -1085,7 +1089,7 @@ export default function App() {
       }
       return true;
     });
-  }, [expenses, isAdmin, isPastor, userEmail, expenseFilterPeriod]);
+  }, [expenses, expenseFilterPeriod, isAdmin, isPastor, isStaff, isRuchi]);
 
   const availableTabs = useMemo(() => {
     const tabs = ['dashboard', 'calendar', 'members'];
@@ -3261,6 +3265,77 @@ export default function App() {
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
             Staff Portal
           </h2>
+          {/* Role-Based Attendance Approval System */}
+<div style={{ backgroundColor: '#fff9e6', padding: '16px', borderRadius: '8px', border: '1px solid #ffeeba', marginBottom: '20px' }}>
+  {user?.email === 'robby_7c@yahoo.com' || user?.email === 'shivu_admin@yahoo.com' || user?.email?.includes('admin') ? (
+    <div>
+      <h4 style={{ margin: '0 0 8px 0', color: '#856404' }}>
+        {user?.email === 'robby_7c@yahoo.com' ? "Pastor Robby: Attendance Approval Queue" : "Admin Monitoring: Attendance Approvals Overview"}
+      </h4>
+      <p style={{ fontSize: '13px', color: '#666', marginBottom: '12px' }}>
+        {user?.email === 'robby_7c@yahoo.com' 
+          ? "Review staff missed-punch explanations and approve or reject requests." 
+          : "Monitor staff missed-punch requests and review Pastor Robby's approval/rejection decisions for transparency."}
+      </p>
+      {/* We will fetch and display actual requests from Firestore here */}
+      <div style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', color: '#555' }}>
+        <p style={{ margin: 0 }}>Loading or no pending requests found in Firestore.</p>
+      </div>
+    </div>
+  ) : (
+    <div>
+      <h4 style={{ margin: '0 0 8px 0', color: '#856404' }}>⚠️ Missed Punch / Attendance Approval Request</h4>
+      <p style={{ fontSize: '13px', color: '#666', marginBottom: '12px' }}>
+        If you forgot to punch in or out on time, please submit your reason below for Pastor Robby's review and approval.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <select 
+          id="missedPunchType"
+          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '13px' }}
+        >
+          <option value="Missed Punch In">Missed Punch In</option>
+          <option value="Missed Punch Out">Missed Punch Out</option>
+          <option value="Both Missed">Both Missed</option>
+        </select>
+        <textarea 
+          id="missedPunchReason"
+          placeholder="Please write your detailed reason / explanation here..." 
+          rows="2"
+          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '13px' }}
+        />
+        <button 
+          onClick={async () => {
+            const type = document.getElementById('missedPunchType').value;
+            const reason = document.getElementById('missedPunchReason').value;
+            if (!reason.trim()) {
+              alert('Please provide a reason for your missed punch.');
+              return;
+            }
+            try {
+              await addDoc(collection(db, 'attendance_approval_requests'), {
+                staffEmail: user.email,
+                staffName: user.displayName || user.email,
+                requestType: type,
+                reason: reason,
+                date: new Date().toISOString().split('T')[0],
+                status: 'Pending',
+                createdAt: serverTimestamp()
+              });
+              alert('Missed punch approval request sent successfully to Pastor Robby!');
+              document.getElementById('missedPunchReason').value = '';
+            } catch (err) {
+              console.error("Error submitting request:", err);
+              alert('Error submitting request. Please try again.');
+            }
+          }}
+          style={{ backgroundColor: '#856404', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+        >
+          Submit Request to Pastor Robby
+        </button>
+      </div>
+    </div>
+  )}
+</div>
           <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#6b21a8' }}>📜 Church Rules & Regulations</h3>
             <p style={{ fontSize: '13px', color: '#475569', marginBottom: '12px' }}>Click below to view the official signed letter from Pastor Robby.</p>
