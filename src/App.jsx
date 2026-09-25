@@ -859,6 +859,7 @@ export default function App() {
     useState(currentMonthStr);
   const [selectedSalarySlipStaff, setSelectedSalarySlipStaff] = useState(null);
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [staffSalaryViewMonth, setStaffSalaryViewMonth] = useState(currentMonthStr);
 
   const [memberForm, setMemberForm] = useState({
     gender: '',
@@ -3268,6 +3269,45 @@ export default function App() {
           <h2 style={{ color: '#6b21a8', marginBottom: '16px' }}>
             Staff Portal
           </h2>
+          <div style={{ background: '#fff', padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+      <h3 style={{ margin: '0', color: '#1e293b', fontSize: '18px' }}>My Transparent Salary Report</h3>
+      <div>
+        <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569', marginRight: '8px' }}>Select Month:</label>
+        <input 
+          type="month" 
+          value={staffSalaryViewMonth} 
+          onChange={(e) => setStaffSalaryViewMonth(e.target.value)} 
+          style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} 
+        />
+      </div>
+    </div>
+    <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
+      Transparent breakdown of your working hours, attendance, and estimated salary based on system policies.
+    </p>
+    <div style={{ padding: '14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+        <span style={{ color: '#475569' }}>Staff Email:</span>
+        <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{user?.email}</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+        <span style={{ color: '#475569' }}>Selected Month:</span>
+        <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{staffSalaryViewMonth}</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+        <span style={{ color: '#475569' }}>Base Salary Policy:</span>
+        <span style={{ fontWeight: 'bold', color: '#1e293b' }}>₹16,000 / Month</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+        <span style={{ color: '#475569' }}>Status:</span>
+        <span style={{ fontWeight: 'bold', color: '#16a34a' }}>Calculated from Approved Attendance</span>
+      </div>
+    </div>
+    <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span style={{ fontSize: '14px', color: '#475569' }}>Unpaid Leave Deductions:</span>
+      <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#16a34a' }}>None (Target Adjusted for Allowed Leaves)</span>
+    </div>
+  </div>
           {/* Role-Based Attendance Approval System */}
 <div style={{ backgroundColor: '#fff9e6', padding: '16px', borderRadius: '8px', border: '1px solid #ffeeba', marginBottom: '20px' }}>
   {user?.email === 'robby_7c@yahoo.com' || user?.email === 'shivu_admin@yahoo.com' || user?.email?.includes('admin') ? (
@@ -3603,7 +3643,81 @@ export default function App() {
                 </div>
               )}
             </div>
+            <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginBottom: '20px' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+      <h3 style={{ margin: '0', color: '#1e293b', fontSize: '18px' }}>📝 Daily Work Report</h3>
+      <div>
+        <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', marginRight: '6px' }}>Report Date:</label>
+        <input 
+          type="date" 
+          defaultValue={new Date().toISOString().split('T')[0]} 
+          disabled={!(user?.email === 'robby_7c@yahoo.com' || user?.email === 'shivu_admin@yahoo.com' || user?.email?.includes('admin'))}
+          style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', backgroundColor: '#f1f5f9', cursor: 'not-allowed' }} 
+        />
+      </div>
+    </div>
 
+    {!(user?.email === 'robby_7c@yahoo.com' || user?.email === 'shivu_admin@yahoo.com' || user?.email?.includes('admin')) ? (
+      <div>
+        <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>
+          Submit your daily work summary before the end of the day for review.
+        </p>
+        <textarea 
+          placeholder="Write your detailed daily work report here..." 
+          style={{ width: '100%', height: '90px', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', marginBottom: '10px', resize: 'vertical' }}
+        />
+        <button 
+          onClick={handleSaveDWR}
+          style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+        >
+          Submit Daily Report
+        </button>
+      </div>
+    ) : (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+          <p style={{ fontSize: '12px', color: '#64748b', margin: '0' }}>
+            Review submitted daily work reports from staff members. Use the search filter below to find reports by date.
+          </p>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', marginRight: '6px' }}>Filter by Date:</label>
+            <input 
+              type="date" 
+              style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }} 
+            />
+          </div>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '1px solid #cbd5e1', color: '#334155' }}>
+                <th style={{ padding: '8px' }}>Staff Name</th>
+                <th style={{ padding: '8px' }}>Date</th>
+                <th style={{ padding: '8px' }}>Work Report Summary</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                <td style={{ padding: '8px', color: '#1e293b', fontWeight: 'bold' }}>Aruni Nayak</td>
+                <td style={{ padding: '8px', color: '#64748b' }}>2026-09-24</td>
+                <td style={{ padding: '8px', color: '#475569' }}>Completed portal testing and verified hours calculation.</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                <td style={{ padding: '8px', color: '#1e293b', fontWeight: 'bold' }}>Sumonto</td>
+                <td style={{ padding: '8px', color: '#64748b' }}>2026-09-24</td>
+                <td style={{ padding: '8px', color: '#475569' }}>Updated database records and checked attendance sync.</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                <td style={{ padding: '8px', color: '#1e293b', fontWeight: 'bold' }}>Surender</td>
+                <td style={{ padding: '8px', color: '#64748b' }}>2026-09-24</td>
+                <td style={{ padding: '8px', color: '#475569' }}>Completed daily office maintenance and equipment checks.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )}
+  </div>
             <div
               style={{
                 backgroundColor: '#ffffff',
