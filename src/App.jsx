@@ -272,17 +272,22 @@ function DateOfferingTableCard({
   totalTithes,
   totalOfferings,
   grandTotal,
+  totalExpenses,
   isAdmin,
   dailySheets,
   todayStr,
   onEditOffering,
   onDeleteOffering,
   onUploadSheet,
+  onAddExpense,
+  onDeleteDate,
   onQuickAddForDate,
 }) {
   const [showTithes, setShowTithes] = useState(false);
-  const sheet = dailySheets[date];
-
+  const sheet = (dailySheets && dailySheets[date]) ? dailySheets[date] : {};
+  const safeExpenses = (sheet && sheet.expenses) ? sheet.expenses : [];
+  const safeTotalExpenses = safeExpenses.reduce((sum, e) => sum + Number(e.amt || e.amount || 0), 0);
+  const calculatedGrandTotal = ((totalTithes || 0) + (totalOfferings || 0)) - safeTotalExpenses;
   return (
     <div
       style={{
@@ -328,8 +333,22 @@ function DateOfferingTableCard({
             </button>
           )}
           <span style={{ fontSize: '13px', color: '#16a34a' }}>
-            Date Total: ₹{grandTotal.toLocaleString('en-IN')}
+            Date Total: ₹{calculatedGrandTotal.toLocaleString('en-IN')}
           </span>
+          {isAdmin && (
+  <button
+    onClick={() => {
+      const desc = prompt("Enter expense item name / detail:");
+      if (!desc) return;
+      const amt = Number(prompt("Enter expense amount:"));
+      if (!amt || isNaN(amt)) return;
+      onAddExpense(date, desc, amt);
+    }}
+    style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', marginLeft: '12px' }}
+  >
+    + Add Expense
+  </button>
+)}
         </div>
       </div>
 
@@ -359,6 +378,24 @@ function DateOfferingTableCard({
           </tr>
         </thead>
         <tbody>
+        {sheet?.expenses && sheet.expenses.map((exp, index) => (
+  <tr key={`exp-${index}`} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fef2f2' }}>
+    <td style={{ padding: '12px 16px', color: '#991b1b', fontWeight: 'bold' }}>Expense: {exp.desc}</td>
+    <td style={{ padding: '12px 16px', color: '#4b5563' }}>Offering Deduction</td>
+    <td style={{ padding: '12px 16px', color: '#4b5563' }}>N/A</td>
+    <td style={{ padding: '12px 16px', color: '#991b1b', fontWeight: 'bold', textAlign: 'right' }}>-₹{exp.amt.toLocaleString('en-IN')}</td>
+    {isAdmin && (
+      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+        <button
+          onClick={() => onDeleteExpense(date, index)}
+          style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}
+        >
+          Delete
+        </button>
+      </td>
+    )}
+  </tr>
+))}
           {sortedTithes.length > 0 && (
             <>
               <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fdf4ff' }}>
@@ -462,16 +499,50 @@ function DateOfferingTableCard({
             <td colSpan={isAdmin ? 4 : 3} style={{ padding: '16px', textAlign: 'right', fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>
               <div style={{ float: 'left', textAlign: 'left' }}>
               {sheet ? (
-              <button 
-                onClick={() => {
-                  const win = window.open();
-                  win.document.write(`<html><head><title>${sheet.name}</title></head><body style="margin:0;background:#000;display:flex;justify-content:center;align-items:center;height:100vh;"><img src="${sheet.file}" style="max-width:100%;max-height:100%;object-fit:contain;" /></body></html>`);
-                }}
-                style={{ backgroundColor: 'transparent', border: 'none', color: '#16a34a', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontSize: '13px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-              >
-                📄 View Daily Counting Sheet ({sheet.name})
-              </button>
-            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+  onClick={() => {
+    let sheetUrl = null;
+    if (typeof sheet === 'string') {
+      sheetUrl = sheet;
+    } else if (sheet?.file) {
+      sheetUrl = sheet.file;
+    } else if (sheet?.url) {
+      sheetUrl = sheet.url;
+    } else if (sheet?.fileUrl) {
+      sheetUrl = sheet.fileUrl;
+    } else if (sheet?.data) {
+      sheetUrl = sheet.data;
+    } else if (sheet?.dataUrl) {
+      sheetUrl = sheet.dataUrl;
+    }
+
+    if (sheetUrl) {
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(`<iframe src="${sheetUrl}" style="width:100%; height:100%; border:none; margin:0; padding:0;"></iframe>`);
+      }
+    } else {
+      alert('No sheet link found!');
+    }
+  }}
+  style={{ background: 'none', border: 'none', color: '#16a34a', textDecoration: 'underline', fontSize: '13px', cursor: 'pointer', padding: 0 }}
+>
+  View Daily Counting Sheet ({typeof sheet === 'string' ? 'Sheet' : (sheet?.name || 'Sheet')})
+</button>
+              {isAdmin && (
+                <>
+                  <button
+                    onClick={() => onUploadSheet(date)}
+                    style={{ backgroundColor: '#7e22ce', color: '#fff', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}
+                  >
+                    Change Sheet
+                  </button>
+                  </>
+              )}
+            </div>
+
+              ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '11px', color: '#dc2626', fontStyle: 'italic' }}>
                   ⚠️ No sheet uploaded for {date}.
@@ -496,7 +567,7 @@ function DateOfferingTableCard({
               Grand Total:
             </td>
             <td colSpan="2" style={{ padding: '16px', textAlign: 'left', fontWeight: 'bold', color: '#16a34a', fontSize: '16px' }}>
-              ₹{grandTotal.toLocaleString('en-IN')}
+            ₹{calculatedGrandTotal.toLocaleString('en-IN')}
             </td>
           </tr>
         </tfoot>
@@ -5549,12 +5620,14 @@ export default function App() {
                             
               return sortedDates.map((date) => {
                 const dateItems = groupedByDate[date];
+                const sheet = dailySheets[date];
                 const tithes = dateItems.filter((o) => o.category === 'Tithe');
                 const nonTithes = dateItems.filter((o) => o.category !== 'Tithe');
 
                 const totalTithes = tithes.reduce((sum, o) => sum + Number(o.amount || 0), 0);
                 const totalOfferings = nonTithes.reduce((sum, o) => sum + Number(o.amount || 0), 0);
-                const grandTotal = totalTithes + totalOfferings;
+                const totalExpenses = (sheet?.expenses || []).reduce((sum, e) => sum + Number(e.amount || 0), 0);
+                const grandTotal = (totalTithes + totalOfferings) - totalExpenses;
 
                 const sortedTithes = [...tithes].sort((a, b) => {
                   const nameA = (a.memberName || '').toLowerCase();
@@ -5564,28 +5637,43 @@ export default function App() {
 
                 return (
                   <DateOfferingTableCard
-                    key={date}
-                    date={date}
-                    dateItems={dateItems}
-                    sortedTithes={sortedTithes}
-                    nonTithes={nonTithes}
-                    totalTithes={totalTithes}
-                    totalOfferings={totalOfferings}
-                    grandTotal={grandTotal}
-                    isAdmin={isAdmin}
-                    dailySheets={dailySheets}
-                    todayStr={todayStr}
-                    onEditOffering={handleEditOfferingClick}
-                    onDeleteOffering={handleDeleteOffering}
-                    onUploadSheet={(d) => {
-                      setSelectedDailyDate(d);
-                      setShowDailySheetModal(true);
-                    }}
-                    onQuickAddForDate={(d) => {
-                      setOfferingForm({ ...offeringForm, date: d });
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                  />
+  key={date}
+  date={date}
+  dateItems={dateItems}
+  sortedTithes={sortedTithes}
+  nonTithes={nonTithes}
+  totalTithes={totalTithes}
+  totalOfferings={totalOfferings}
+  totalExpenses={totalExpenses}
+  grandTotal={grandTotal}
+  isAdmin={isAdmin}
+  dailySheets={dailySheets}
+  todayStr={todayStr}
+  onEditOffering={handleEditOfferingClick}
+  onDeleteOffering={handleDeleteOffering}
+  onUploadSheet={(d) => {
+    setSelectedDailyDate(d);
+    setShowDailySheetModal(true);
+  }}
+  onQuickAddForDate={(d) => {
+    setOfferingForm({ ...offeringForm, date: d });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }}
+  onAddExpense={(d, desc, amt) => {
+    const updatedSheets = { ...dailySheets };
+    if (!updatedSheets[d]) updatedSheets[d] = { name: '', url: '', expenses: [] };
+    if (!updatedSheets[d].expenses) updatedSheets[d].expenses = [];
+    updatedSheets[d].expenses.push({ desc, amt });
+    setDailySheets(updatedSheets);
+  }}
+  onDeleteExpense={(d, index) => {
+    const updatedSheets = { ...dailySheets };
+    if (updatedSheets[d] && updatedSheets[d].expenses) {
+      updatedSheets[d].expenses.splice(index, 1);
+      setDailySheets({ ...updatedSheets });
+    }
+  }}
+/>
                 );
               });
             })()}
