@@ -1144,7 +1144,11 @@ export default function App() {
       if (!exp.date) return true;
       const expDate = new Date(exp.date);
       const today = new Date();
-
+      
+      if (expenseFilterPeriod && expenseFilterPeriod.length === 7) {
+        const expYearMonth = `${expDate.getFullYear()}-${String(expDate.getMonth() + 1).padStart(2, '0')}`;
+        return expYearMonth === expenseFilterPeriod;
+      }
       if (expenseFilterPeriod === 'all') {
         return true;
       }
@@ -5068,18 +5072,20 @@ export default function App() {
   }).reduce((sum, e) => sum + (Number(e.amount) || 0), 0).toLocaleString('en-IN')}
 </div>
 <div style={{ marginBottom: '15px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Filter View:</label>
-            <select 
-              value={expenseFilterPeriod || 'current_month'} 
-              onChange={(e) => setExpenseFilterPeriod(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#fff', color: '#1e293b' }}
-            >
-              <option value="current_month">📅 Current Month (Default)</option>
-              <option value="all">📂 All Expenses</option>
-              <option value="year">🗓️ This Year</option>
-              <option value="custom">🔍 Custom Date Range</option>
-            </select>
-          </div>
+      <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Filter Expense Month:</label>
+      <input 
+        type="month" 
+        value={expenseFilterPeriod && expenseFilterPeriod.length === 7 ? expenseFilterPeriod : ''} 
+        onChange={(e) => setExpenseFilterPeriod(e.target.value)}
+        style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#fff', color: '#1e293b' }}
+      />
+      <button 
+        onClick={() => setExpenseFilterPeriod('all')}
+        style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#f1f5f9', cursor: 'pointer', fontWeight: 'bold' }}
+      >
+        View All Expenses
+      </button>
+    </div>
 
 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 {visibleExpenses.length === 0 ? (
@@ -5566,17 +5572,21 @@ export default function App() {
             </div>
           )}
           
-<div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '16px' }}>
-  <span style={{ marginRight: '10px', fontWeight: '500', fontSize: '14px' }}>Filter Month:</span>
-  <select 
-    value={offeringFilterMonth} 
-    onChange={(e) => setOfferingFilterMonth(e.target.value)}
-    style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px', background: '#fff' }}
-  >
-    <option value="current">📅 Current Month</option>
-    <option value="all">📂 All Months</option>
-  </select>
-</div>
+          <div style={{ marginBottom: '15px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+      <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Filter Offering Month:</label>
+      <input 
+        type="month" 
+        value={offeringFilterMonth && offeringFilterMonth.length === 7 ? offeringFilterMonth : ''} 
+        onChange={(e) => setOfferingFilterMonth(e.target.value)}
+        style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#fff', color: '#1e293b' }}
+      />
+      <button 
+        onClick={() => setOfferingFilterMonth('all')}
+        style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#f1f5f9', cursor: 'pointer', fontWeight: 'bold' }}
+      >
+        View All Offerings
+      </button>
+    </div>
           <h3
             style={{
               color: '#1e293b',
@@ -5588,6 +5598,18 @@ export default function App() {
           </h3>
           <div style={{ marginBottom: '15px', fontSize: '15px', fontWeight: 'bold', color: '#1e293b' }}>
   Total Offerings & Tithes: Rs. {(offerings || []).filter(o => {
+    if (offeringFilterMonth && offeringFilterMonth.length === 7) {
+      const offDate = new Date(o.date || '');
+      if (isNaN(offDate.getTime())) return false;
+      const offYearMonth = `${offDate.getFullYear()}-${String(offDate.getMonth() + 1).padStart(2, '0')}`;
+      return offYearMonth === offeringFilterMonth;
+    }
+    if (offeringFilterMonth && offeringFilterMonth.length === 7) {
+      const offDate = new Date(o.date || '');
+      if (isNaN(offDate.getTime())) return false;
+      const offYearMonth = `${offDate.getFullYear()}-${String(offDate.getMonth() + 1).padStart(2, '0')}`;
+      return offYearMonth === offeringFilterMonth;
+    }
     if (offeringFilterMonth === 'all') return true;
     const d = o.date || '';
     return d.startsWith(currentMonthStr);
@@ -5597,6 +5619,12 @@ export default function App() {
             
             {(() => {
               const filteredOfferings = (offerings || []).filter(o => {
+                if (offeringFilterMonth && offeringFilterMonth.length === 7) {
+                  const offDate = new Date(o.date || '');
+                  if (isNaN(offDate.getTime())) return false;
+                  const offYearMonth = `${offDate.getFullYear()}-${String(offDate.getMonth() + 1).padStart(2, '0')}`;
+                  return offYearMonth === offeringFilterMonth;
+                }
                 if (offeringFilterMonth === 'all') return true;
                 const d = o.date || '';
                 return d.startsWith(currentMonthStr);
