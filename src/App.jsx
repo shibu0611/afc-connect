@@ -61,7 +61,7 @@ const INITIAL_STAFF_PROFILES = {
   },
   'Surender Messey': {
     empId: 'EMP003',
-    designation: 'Church Staff',
+    designation: 'Assistant Pastor',
     email: 'surendermessy@gmail.com',
     bankName: 'HDFC Bank',
     accountNumber: '456789123456',
@@ -3321,22 +3321,23 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '10px', fontWeight: 'bold' }}>Sumonto</td>
-                    <td style={{ padding: '10px' }}>Calculated from Attendance</td>
-                    <td style={{ padding: '10px', color: '#16a34a', fontWeight: 'bold' }}>Auto-Calculated</td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '10px', fontWeight: 'bold' }}>Aruni</td>
-                    <td style={{ padding: '10px' }}>Calculated from Attendance</td>
-                    <td style={{ padding: '10px', color: '#16a34a', fontWeight: 'bold' }}>Auto-Calculated</td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '10px', fontWeight: 'bold' }}>Surender</td>
-                    <td style={{ padding: '10px' }}>Calculated from Attendance</td>
-                    <td style={{ padding: '10px', color: '#16a34a', fontWeight: 'bold' }}>Auto-Calculated</td>
-                  </tr>
-                </tbody>
+      {[
+        { name: 'Sumonto', email: 'xsumonto987@gmail.com' },
+        { name: 'Aruni', email: 'aruni' },
+        { name: 'Surender', email: 'surender' }
+      ]
+        .filter(staff => {
+          if (isAdmin || isPastor) return true;
+          return user && user.email && user.email.toLowerCase() === staff.email.toLowerCase();
+        })
+        .map((staff, index) => (
+          <tr key={index} style={{ borderBottom: '1px solid #f1f5f9' }}>
+            <td style={{ padding: '10px', fontWeight: 'bold' }}>{staff.name}</td>
+            <td style={{ padding: '10px' }}>Calculated from Attendance</td>
+            <td style={{ padding: '10px', color: '#16a34a', fontWeight: 'bold' }}>Auto-Calculated</td>
+          </tr>
+        ))}
+    </tbody>
               </table>
             </div>
           </div>
@@ -3346,6 +3347,44 @@ export default function App() {
           </h2>
           <div style={{ background: '#fff', padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+      {/* Professional Staff Profile Card */}
+      <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
+        <h3 style={{ margin: '0 0 12px 0', color: '#1e293b', fontSize: '16px' }}>My Profile Details</h3>
+        {(() => {
+          const staffEmail = (user?.email || '').toLowerCase();
+          let name = 'Staff Member';
+          let designation = 'Assistant Pastor';
+          let salary = 16000;
+          let offDays = 'Monday';
+          
+          if (staffEmail.includes('sumonto')) {
+            name = 'Sumonto Christian';
+            designation = 'Assistant Pastor';
+            salary = 16500;
+            offDays = 'Monday';
+          } else if (staffEmail.includes('aruni')) {
+            name = 'Aruni Nayak';
+            designation = 'Church Coordinator';
+            salary = 16000;
+            offDays = 'Monday';
+          } else if (staffEmail.includes('surender')) {
+            name = 'Surender Messey';
+            designation = 'Assistant Pastor';
+            salary = 12000;
+            offDays = 'Tue, Thu, Sat';
+          }
+          
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px' }}>
+              <div><span style={{ color: '#475569' }}>Name:</span> <strong>{name}</strong></div>
+              <div><span style={{ color: '#475569' }}>Designation:</span> <strong style={{ color: '#2563eb' }}>{designation}</strong></div>
+              <div><span style={{ color: '#475569' }}>Email:</span> <strong>{user?.email}</strong></div>
+              <div><span style={{ color: '#475569' }}>Base Salary:</span> <strong style={{ color: '#16a34a' }}>₹{salary.toLocaleString('en-IN')} / Mo</strong></div>
+              <div style={{ gridColumn: 'span 2' }}><span style={{ color: '#475569' }}>Off Days:</span> <strong>{offDays}</strong></div>
+            </div>
+          );
+        })()}
+      </div>
       <h3 style={{ margin: '0', color: '#1e293b', fontSize: '18px' }}>My Transparent Salary Report</h3>
       <div>
         <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569', marginRight: '8px' }}>Select Month:</label>
@@ -3369,10 +3408,33 @@ export default function App() {
         <span style={{ color: '#475569' }}>Selected Month:</span>
         <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{staffSalaryViewMonth}</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
-        <span style={{ color: '#475569' }}>Base Salary Policy:</span>
-        <span style={{ fontWeight: 'bold', color: '#1e293b' }}>₹16,000 / Month</span>
-      </div>
+      {(() => {
+        const staffEmail = (user?.email || '').toLowerCase();
+        let salary = 16000;
+        let designation = 'Church Staff';
+        if (staffEmail.includes('sumonto')) {
+          salary = 16500;
+          designation = 'Assistant Pastor';
+        } else if (staffEmail.includes('aruni')) {
+          salary = 16000;
+          designation = 'Church Coordinator';
+        } else if (staffEmail.includes('surender')) {
+          salary = 12000;
+          designation = 'Church Staff';
+        }
+        return (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+              <span style={{ color: '#475569' }}>Designation:</span>
+              <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{designation}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+              <span style={{ color: '#475569' }}>Base Salary Policy:</span>
+              <span style={{ fontWeight: 'bold', color: '#1e293b' }}>₹{salary.toLocaleString('en-IN')} / Month</span>
+            </div>
+          </>
+        );
+      })()}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
         <span style={{ color: '#475569' }}>Status:</span>
         <span style={{ fontWeight: 'bold', color: '#16a34a' }}>Calculated from Approved Attendance</span>
