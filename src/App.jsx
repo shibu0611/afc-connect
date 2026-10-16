@@ -2192,6 +2192,14 @@
     };
 
     const handleSaveExpense = async (e) => {
+      if (expenseForm.paymentMethod === 'Expense from Sumonto Advance') {
+        const newBalance = Number(sumontoAdvanceBalance || 1567) - Number(expenseForm.amount);
+        setSumontoAdvanceBalance(newBalance);
+      }
+      if (expenseForm.paymentMethod === 'Expense from Surender Advance') {
+        const newBalance = Number(surenderAdvanceBalance || 0) - Number(expenseForm.amount);
+        setSurenderAdvanceBalance(newBalance);
+      }
       e.preventDefault();
       if (!expenseForm.amount || !expenseForm.category) {
         alert('Amount and Category are required.');
@@ -5070,7 +5078,7 @@
                     .filter(e => e.status === 'Approved' && (e.paymentSource === 'Give Advance to Sumonto' || e.paymentSource === 'Give Advance to Staff' && e.staffMember === 'Sumonto Christian'))
                     .reduce((sum, e) => sum + Number(e.amount || 0), 0) -
                   expenses
-                    .filter(e => e.status === 'Approved' && (e.paymentSource === 'Deduct from Sumonto Christian Advance' || e.paymentSource === 'Out-of-Pocket (Needs Reimbursement)' && e.staffMember === 'Sumonto Christian'))
+                  .filter(e => e.status === 'Approved' && (e.paymentSource === 'Deduct from Sumonto Christian Advance' || e.paymentSource === 'Expense from Sumonto Advance'))
                     .reduce((sum, e) => sum + Number(e.amount || 0), 0)
                 }
               </div>
@@ -5082,7 +5090,7 @@
                     .filter(e => e.status === 'Approved' && (e.paymentSource === 'Give Advance to Surender' || e.paymentSource === 'Give Advance to Staff' && e.staffMember === 'Surender Messey'))
                     .reduce((sum, e) => sum + Number(e.amount || 0), 0) -
                   expenses
-                    .filter(e => e.status === 'Approved' && (e.paymentSource === 'Deduct from Surender Messey Advance' || e.paymentSource === 'Out-of-Pocket (Needs Reimbursement)' && e.staffMember === 'Surender Messey'))
+                  .filter(e => e.status === 'Approved' && (e.paymentSource === 'Deduct from Surender Messey Advance' || e.paymentSource === 'Expense from Surender Advance'))
                     .reduce((sum, e) => sum + Number(e.amount || 0), 0)
                 }
               </div>
@@ -5115,7 +5123,10 @@
                           <option value="Direct UPI by Pastor Robby">Direct paid by Pastor Robby</option>
                           <option value="Give Advance to Sumonto">Give advance to Sumonto Christian</option>
                           <option value="Give Advance to Surender">Give advance to Surender Messey</option>
+                          <option value="Expense from Sumonto Advance">Expense paid from Sumonto's Advance</option>
+                          <option value="Expense from Surender Advance">Expense paid from Surender's Advance</option>
                         </>
+                        
                       ) : (
                         <>
                           <option value="Direct UPI by Pastor Robby">Direct paid by Pastor Robby</option>
