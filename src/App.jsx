@@ -842,7 +842,21 @@
         alert('Error uploading file. Please try a smaller file.');
       }
     };
-
+    const [punchSelfie, setPunchSelfie] = useState(null);
+    const [showCameraModal, setShowCameraModal] = useState(false);
+    useEffect(() => {
+      if (showCameraModal) {
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then((stream) => {
+            const video = document.getElementById('churchWebcam');
+            if (video) video.srcObject = stream;
+          })
+          .catch((err) => {
+            alert('❌ Unable to access camera. Please allow camera permissions.');
+            setShowCameraModal(false);
+          });
+      }
+    }, [showCameraModal]);
     const [members, setMembers] = useState([]);
     const [expenses, setExpenses] = useState([]);
     const [offerings, setOfferings] = useState([]);
@@ -1279,6 +1293,10 @@
     };
 
     const handlePunchIn = (applyLatePass = false) => {
+      if (!punchSelfie) {
+        setShowCameraModal(true);
+        return;
+      }
       if (applyLatePass && latePassesUsedThisMonth >= 2) {
         alert(
           '⚠️ You have already used your 2 allowed Late Passes for this month!'
@@ -1308,6 +1326,10 @@
     };
 
     const handlePunchOut = () => {
+      if (!punchSelfie) {
+        setShowCameraModal(true);
+        return;
+      }
       if (new Date().getDay() === 0) { alert("Sundays only require Punch In. No Punch Out needed!"); return; }
       if (!myTodayShift) return;
 
@@ -3306,10 +3328,14 @@
                         .filter(a => (a.email || '').toLowerCase() === userEmail)
                         .sort((a, b) => b.date.localeCompare(a.date))
                         .map(rec => {
-                          let workedHrs = '—';
-                          if (rec.punchInTime && rec.punchOutTime) {
-                            const start = new Date(rec.punchInTime).getTime();
-                            const end = new Date(rec.punchOutTime).getTime();
+                          let workedHrs = '-';
+let displayPunchOut = rec.punchOutTime;
+if (rec.punchInTime && !rec.punchOutTime && rec.date !== todayStr) {
+  displayPunchOut = rec.date + ' 23:59:00';
+}
+if (rec.punchInTime && displayPunchOut) {
+  const start = new Date(rec.punchInTime).getTime();
+  const end = new Date(displayPunchOut).getTime();
                             const mins = Math.max(0, Math.round((end - start) / 60000) - (rec.totalBreakMinutes || 0));
                             const hrs = Math.floor(mins / 60);
                             const remMins = mins % 60;
@@ -3319,7 +3345,7 @@
                             <tr key={rec.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                               <td style={{ padding: '8px' }}>{rec.date}</td>
                               <td style={{ padding: '8px' }}>{rec.punchInTime ? new Date(rec.punchInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
-                              <td style={{ padding: '8px' }}>{rec.punchOutTime ? new Date(rec.punchOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'In Progress'}</td>
+                              <td style={{ padding: '8px' }}>{rec.punchOutTime ? new Date(rec.punchOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (rec.date !== todayStr ? 'Auto Closed (Forgot to Punch Out)' : 'In Progress')}</td>
                               <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold', color: '#16a34a' }}>{workedHrs}</td>
                             </tr>
                           );
@@ -3364,7 +3390,7 @@
                               <td style={{ padding: '8px', fontWeight: 'bold' }}>{rec.email}</td>
                               <td style={{ padding: '8px' }}>{rec.date}</td>
                               <td style={{ padding: '8px' }}>{rec.punchInTime ? new Date(rec.punchInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
-                              <td style={{ padding: '8px' }}>{rec.punchOutTime ? new Date(rec.punchOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'In Progress'}</td>
+                              <td style={{ padding: '8px' }}>{rec.punchOutTime ? new Date(rec.punchOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (rec.date !== todayStr ? 'Auto Closed (Forgot to Punch Out)' : 'In Progress')}</td>
                               <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold', color: '#16a34a' }}>{workedHrs}</td>
                             </tr>
                           );
@@ -5928,10 +5954,37 @@
                   );
                 });
               })()}
-            </div>
+          </div>
           </div>
         )}
+        {showCameraModal && (
+  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
+    <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '12px', width: '90%', maxWidth: '400px', textAlign: 'center' }}>
+      <h3 style={{ color: '#6b21a8', marginBottom: '10px' }}>📸 Take Selfie</h3>
+      <video id="churchWebcam" autoPlay playsInline style={{ width: '100%', borderRadius: '8px', background: '#000' }}></video>
+      <canvas id="churchCanvas" style={{ display: 'none' }}></canvas>
+      <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+        <button type="button" onClick={() => {
+          const video = document.getElementById('churchWebcam');
+          const canvas = document.getElementById('churchCanvas');
+          canvas.width = video.videoWidth || 320;
+          canvas.height = video.videoHeight || 240;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+          setPunchSelfie(dataUrl);
+          setShowCameraModal(false);
+        }} style={{ flex: 1, backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold' }}>Capture</button>
+        <button type="button" onClick={() => {
+          const video = document.getElementById('churchWebcam');
+          if (video && video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+          setShowCameraModal(false);
+        }} style={{ flex: 1, backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold' }}>Cancel</button>
       </div>
-    );
+    </div>
+  </div>
+)}
+      </div>
+      );
   }
-
