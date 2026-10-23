@@ -932,12 +932,20 @@
         return;
       }
       const ws = XLSX.utils.json_to_sheet(filteredReportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, `${reportModule}_report`);
-      XLSX.writeFile(
-        wb,
-        `AFC_${reportModule.toUpperCase()}_Report_${todayStr}.xlsx`
-      );
+    const wb = XLSX.utils.book_new();
+    const safeSheetName = (reportModule || 'Report').substring(0, 30);
+    XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+    
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+    const url = URL.createObjectURL(data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `AFC_${reportModule.toUpperCase().replace(/[^A-Z0-9]/g, '_')}_Report_${todayStr}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
     };
 
     const [selectedPayrollMonth, setSelectedPayrollMonth] =
@@ -2269,7 +2277,7 @@
             : '',
           justification: '',
           delayReason: isPastDate ? expenseForm.delayReason.trim() : '',
-          paymentSource: expenseForm.paymentSource,
+          paymentSource: expenseForm.paymentSource || expenseForm.paymentMethod,
           status: (user.email && user.email.toLowerCase() === 'robby_7c@yahoo.com') ? 'Approved' : 'Pending',
           rejectionReason: '',
           addedBy: user.email,
@@ -2470,14 +2478,13 @@
       })
       .reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
-    const monthlyExpenseTotal = (expenses || [])
+      const monthlyExpenseTotal = (expenses || [])
       .filter((e) => {
         const d = new Date(e.date);
-        return (
-          d.getMonth() === currentMonth &&
-          d.getFullYear() === currentYear &&
-          e.status === 'Approved'
-        );
+        const isCorrectMonth = d.getMonth() === currentMonth && d.getFullYear() === currentYear && e.status === 'Approved';
+        const source = ((e.paymentSource || '') + ' ' + (e.paymentMethod || '') + ' ' + (e.detail || '') + ' ' + (e.category || '')).toLowerCase();
+        const isAdvanceHandover = source.includes('advance');
+        return isCorrectMonth && !isAdvanceHandover;
       })
       .reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
@@ -5312,13 +5319,16 @@ if (rec.punchInTime && displayPunchOut) {
               Professional Expense Ledger
             </h3>
             <div style={{ marginBottom: '15px', fontSize: '15px', fontWeight: 'bold', color: '#1e293b' }}>
-    Total Expenses: Rs. {(expenses || []).filter(e => {
-      const expenseDate = new Date(e.date || e.createdAt);
-      const now = new Date();
-      if (expenseFilterPeriod === 'all') return true;
-      if (expenseFilterPeriod === 'year') return expenseDate.getFullYear() === now.getFullYear();
-      return expenseDate.getMonth() === now.getMonth() && expenseDate.getFullYear() === now.getFullYear();
-    }).reduce((sum, e) => sum + (Number(e.amount) || 0), 0).toLocaleString('en-IN')}
+            Total Expenses: Rs. {(expenses || []).filter(e => {
+  const expenseDate = new Date(e.date || e.createdAt);
+  const now = new Date();
+  const source = ((e.paymentSource || '') + ' ' + (e.paymentMethod || '') + ' ' + (e.detail || '') + ' ' + (e.category || '')).toLowerCase();
+  const isAdvanceHandover = source.includes('advance');
+  if (isAdvanceHandover) return false;
+  if (expenseFilterPeriod === 'all') return true;
+  if (expenseFilterPeriod === 'year') return expenseDate.getFullYear() === now.getFullYear();
+  return expenseDate.getMonth() === now.getMonth() && expenseDate.getFullYear() === now.getFullYear();
+}).reduce((sum, e) => sum + (Number(e.amount) || 0), 0).toLocaleString('en-IN')}
   </div>
   <div style={{ marginBottom: '15px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
         <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Filter Expense Month:</label>
