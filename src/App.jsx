@@ -931,7 +931,18 @@
         alert('No records found for the selected timeframe and module!');
         return;
       }
-      const ws = XLSX.utils.json_to_sheet(filteredReportData);
+      const cleanedData = filteredReportData.map(row => {
+        const newRow = {};
+        for (let key in row) {
+          let val = row[key];
+          if (typeof val === 'string' && val.length > 32000) {
+            val = val.substring(0, 32000) + '...';
+          }
+          newRow[key] = val;
+        }
+        return newRow;
+      });
+      const ws = XLSX.utils.json_to_sheet(cleanedData);
     const wb = XLSX.utils.book_new();
     const safeSheetName = (reportModule || 'Report').substring(0, 30);
     XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
