@@ -8,6 +8,7 @@
     updateDoc,
     deleteDoc,
     doc,
+    setDoc,
     onSnapshot,
     serverTimestamp,
   } from 'firebase/firestore';
@@ -1073,7 +1074,7 @@
         snap.docs.forEach((d) => {
           const data = d.data();
           if (data.date) {
-            sheetsMap[data.date] = { file: data.file, name: data.name };
+            sheetsMap[data.date] = { file: data.file, name: data.name, expenses: data.expenses || [] };
           }
         });
         setDailySheets(sheetsMap);
@@ -5957,18 +5958,38 @@ if (rec.punchInTime && displayPunchOut) {
       setOfferingForm({ ...offeringForm, date: d });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }}
-    onAddExpense={(d, desc, amt) => {
+    onAddExpense={async (d, desc, amt) => {
       const updatedSheets = { ...dailySheets };
       if (!updatedSheets[d]) updatedSheets[d] = { name: '', url: '', expenses: [] };
       if (!updatedSheets[d].expenses) updatedSheets[d].expenses = [];
       updatedSheets[d].expenses.push({ desc, amt });
       setDailySheets(updatedSheets);
+      
+      try {
+        await setDoc(doc(db, 'daily_sheets', d), {
+          file: updatedSheets[d].file || '',
+          name: updatedSheets[d].name || '',
+          expenses: updatedSheets[d].expenses
+        }, { merge: true });
+      } catch (err) {
+        console.error('Error saving expense:', err);
+      }
     }}
-    onDeleteExpense={(d, index) => {
+    onDeleteExpense={async (d, index) => {
       const updatedSheets = { ...dailySheets };
       if (updatedSheets[d] && updatedSheets[d].expenses) {
         updatedSheets[d].expenses.splice(index, 1);
         setDailySheets({ ...updatedSheets });
+        
+        try {
+          await setDoc(doc(db, 'daily_sheets', d), {
+            file: updatedSheets[d].file || '',
+            name: updatedSheets[d].name || '',
+            expenses: updatedSheets[d].expenses
+          }, { merge: true });
+        } catch (err) {
+          console.error('Error deleting expense:', err);
+        }
       }
     }}
   />
