@@ -5966,11 +5966,23 @@ if (rec.punchInTime && displayPunchOut) {
       setDailySheets(updatedSheets);
       
       try {
-        await setDoc(doc(db, 'daily_sheets', d), {
-          file: updatedSheets[d].file || '',
-          name: updatedSheets[d].name || '',
-          expenses: updatedSheets[d].expenses
-        }, { merge: true });
+        const { collection, query, where, getDocs, updateDoc, doc, setDoc } = await import('firebase/firestore');
+        const q = query(collection(db, 'daily_sheets'), where('date', '==', d));
+        const querySnap = await getDocs(q);
+  
+        if (!querySnap.empty) {
+          const docRef = querySnap.docs[0].ref;
+          await updateDoc(docRef, {
+            expenses: updatedSheets[d].expenses
+          });
+        } else {
+          await setDoc(doc(db, 'daily_sheets', d), {
+            date: d,
+            file: updatedSheets[d].file || '',
+            name: updatedSheets[d].name || '',
+            expenses: updatedSheets[d].expenses
+          }, { merge: true });
+        }
       } catch (err) {
         console.error('Error saving expense:', err);
       }
@@ -6029,4 +6041,4 @@ if (rec.punchInTime && displayPunchOut) {
 )}
       </div>
       );
-  }
+    }
