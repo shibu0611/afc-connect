@@ -5378,7 +5378,7 @@ if (rec.punchInTime && displayPunchOut) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '10px' }}>
                       <div>
                         <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', marginBottom: '4px' }}>
-                          📅 {exp.date} {exp.createdAt?.toDate ? `at ${exp.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''} {isAdmin && `| Added by: {exp.addedBy}`}
+                          📅 {exp.date} {exp.createdAt?.toDate ? `at ${exp.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''} {(isAdmin || isPastor) && ` | Added by: ${exp.addedBy}`}
                         </div>
                         <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b' }}>
                           {exp.category}
